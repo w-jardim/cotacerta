@@ -20,15 +20,42 @@ Não avançar de fase sem validação.
 - escopo enxuto;
 - regras principais registradas.
 
+✅ Status: Validada
+
 ## Fase 1
 
-Validações futuras:
+Validações:
 
 - frontend sobe;
 - backend sobe;
 - banco conecta;
 - healthcheck responde;
 - Docker Compose funcional.
+
+✅ Status: Validada
+
+## Fase 1.5
+
+Validações:
+
+- containers buildados com sucesso;
+- API responde em http://127.0.0.1:3401/health;
+- Web responde em http://127.0.0.1:3411;
+- portas corretas configuradas (3341, 3401, 3411);
+- bind apenas em 127.0.0.1 (não exposto publicamente);
+- healthchecks configurados;
+- restart unless-stopped configurado;
+- configurações Nginx preparadas para host;
+- instruções de SSL/Certbot documentadas.
+
+✅ Status: Validada
+
+Comandos de validação:
+```bash
+docker compose ps
+curl -s http://127.0.0.1:3401/health
+curl -I http://127.0.0.1:3411
+```
 
 ## Fase 2
 

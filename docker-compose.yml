@@ -16,6 +16,52 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - cotacerta-network
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: cotacerta-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 3401
+    ports:
+      - "127.0.0.1:3401:3401"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cotacerta-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3401/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: cotacerta-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3411:80"
+    networks:
+      - cotacerta-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
 volumes:
   cotacerta_postgres_data:
+
+networks:
+  cotacerta-network:
+    driver: bridge

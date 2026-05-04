@@ -9,6 +9,8 @@
 - fluxos
 - validação
 
+✅ Status: Concluída
+
 ## Fase 1 — Setup técnico
 
 - frontend
@@ -16,6 +18,19 @@
 - banco
 - Docker
 - healthcheck
+
+✅ Status: Concluída
+
+## Fase 1.5 — Containerização e Deploy
+
+- Dockerfile para API
+- Dockerfile para Web com Nginx
+- docker-compose.yml completo
+- Configuração Nginx host
+- SSL com Certbot
+- Acesso por domínio
+
+✅ Status: Concluída
 
 ## Fase 2 — Autenticação
 
