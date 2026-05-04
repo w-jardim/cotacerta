@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cotacerta-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cotacerta
+      POSTGRES_USER: cotacerta
+      POSTGRES_PASSWORD: cotacerta_dev_password
+    ports:
+      - "127.0.0.1:3341:5432"
+    volumes:
+      - cotacerta_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cotacerta -d cotacerta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  cotacerta_postgres_data:
