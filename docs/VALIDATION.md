@@ -57,14 +57,66 @@ curl -s http://127.0.0.1:3401/health
 curl -I http://127.0.0.1:3411
 ```
 
+### Correção de Healthcheck Web
+
+Problema identificado: Container `cotacerta-web` ficava `unhealthy` porque o healthcheck usava `http://localhost/health` e dentro do container nginx:alpine o `localhost` não resolvia corretamente.
+
+Solução aplicada: Alterado para `http://127.0.0.1/health` em:
+- `docker-compose.yml` (serviço web)
+- `apps/web/Dockerfile` (HEALTHCHECK)
+
+Validação:
+```bash
+# Dentro do container funciona
+docker exec cotacerta-web wget --quiet --tries=1 --spider http://127.0.0.1/health
+
+# Status healthy
+docker compose ps | grep web
+# Output: cotacerta-web ... Up X seconds (healthy)
+```
+
 ## Fase 2
 
-Validações futuras:
+Validações:
 
-- cadastro funciona;
-- login funciona;
-- JWT protege rotas;
-- senha não é exposta.
+- ✅ Prisma ORM instalado e configurado (v6.19.3)
+- ✅ Schema User criado com roles (ADMIN_PLATFORM, GESTOR_MASTER, COTISTA)
+- ✅ Schema User criado com status (ACTIVE, BLOCKED, INACTIVE)
+- ✅ Migration inicial executada com sucesso
+- ✅ PrismaModule e PrismaService criados
+- ✅ AuthModule com JWT configurado
+- ✅ AuthService com bcrypt (10 rounds)
+- ✅ DTOs com validação em português
+- ✅ POST /auth/register funciona (role padrão: GESTOR_MASTER)
+- ✅ POST /auth/login funciona
+- ✅ GET /auth/me protegido por JWT funciona
+- ✅ Email duplicado retorna 409 Conflict
+- ✅ Senha incorreta retorna 401 Unauthorized
+- ✅ Senha curta (<8 chars) retorna 400 Bad Request
+- ✅ Rota protegida sem token retorna 401 Unauthorized
+- ✅ PasswordHash nunca exposto nas respostas
+
+✅ Status: Validada
+
+Comandos de validação:
+```bash
+# Registro
+curl -X POST http://127.0.0.1:3401/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Teste","email":"teste@example.com","password":"senha12345"}'
+
+# Login
+curl -X POST http://127.0.0.1:3401/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"teste@example.com","password":"senha12345"}'
+
+# Rota protegida (usar token do login)
+curl http://127.0.0.1:3401/auth/me \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
+
+# Containers healthy
+docker compose ps
+```
 
 ## Fase 3+
 
