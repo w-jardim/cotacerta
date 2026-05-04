@@ -18,6 +18,9 @@ COPY packages ./packages
 WORKDIR /app/apps/api
 RUN npm run build
 
+# Gerar Prisma Client
+RUN npx prisma generate
+
 # Production stage
 FROM node:20-alpine
 
@@ -32,9 +35,13 @@ RUN npm ci --omit=dev --workspace=apps/api
 
 # Copiar código compilado
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/packages ./packages
 
 WORKDIR /app/apps/api
+
+# Gerar Prisma Client no ambiente de produção
+RUN npx prisma generate
 
 # Expor porta da API
 EXPOSE 3401

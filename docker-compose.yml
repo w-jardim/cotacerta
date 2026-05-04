@@ -28,6 +28,9 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 3401
+      DATABASE_URL: postgresql://cotacerta:cotacerta_dev_password@postgres:5432/cotacerta?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_real_environment}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
     ports:
       - "127.0.0.1:3401:3401"
     depends_on:
