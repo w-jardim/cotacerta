@@ -98,6 +98,45 @@ Validações:
 
 ✅ Status: Validada
 
+## Fase 2.5 — Frontend Auth
+
+Validações:
+
+- ✅ react-router-dom instalado e configurado
+- ✅ axios instalado com interceptors
+- ✅ Estrutura de pastas criada (features/auth, pages, components/ui, lib, app)
+- ✅ Sistema de tipos TypeScript (User, AuthResponse, LoginCredentials, RegisterData)
+- ✅ AuthStorage para persistência de token no localStorage
+- ✅ API client configurado (Bearer token automático, 401 redirect)
+- ✅ AuthContext com estado global (user, isLoading, login, register, logout)
+- ✅ Auto-carregamento de sessão via GET /auth/me
+- ✅ ProtectedRoute (redireciona para /login se não autenticado)
+- ✅ PublicOnlyRoute (redireciona para /dashboard se autenticado)
+- ✅ Componente Button premium (primary/secondary, loading state)
+- ✅ Componente Input premium (label, error, focus states)
+- ✅ PublicLayout (gradient background, card centralizado)
+- ✅ AuthenticatedLayout (header com user info, logout button)
+- ✅ LoginPage funcional (integração com API)
+- ✅ RegisterPage funcional (integração com API)
+- ✅ DashboardPage com módulos futuros exibidos
+- ✅ Sistema de rotas configurado (/, /login, /register, /dashboard)
+- ✅ Build em produção funciona
+- ✅ Container web (healthy) após rebuild
+- ✅ Acesso público via HTTPS funcionando
+
+✅ Status: Validada
+
+**Credenciais Padrão para Testes:**
+- Email: `admin@cotacerta.com`
+- Senha: `admin123456`
+- Role: Gestor Master
+
+**URLs de Acesso:**
+- Produção: https://cotacerta.gardenwjs.tech
+- API: https://api.cotacerta.gardenwjs.tech
+- Local Web: http://127.0.0.1:3411
+- Local API: http://127.0.0.1:3401
+
 Comandos de validação:
 ```bash
 # Registro
@@ -113,6 +152,63 @@ curl -X POST http://127.0.0.1:3401/auth/login \
 # Rota protegida (usar token do login)
 curl http://127.0.0.1:3401/auth/me \
   -H "Authorization: Bearer SEU_TOKEN_AQUI"
+
+# Containers healthy
+docker compose ps
+```
+
+## Fase 3 — Caixinhas
+
+Validações:
+
+- ✅ Enum CashGroupStatus criado (ACTIVE, PAUSED, CLOSED, ARCHIVED)
+- ✅ Model CashGroup criado no Prisma
+- ✅ Relacionamento User -> CashGroup configurado
+- ✅ Migration executada com sucesso
+- ✅ CashGroupsModule criado e integrado ao AppModule
+- ✅ CashGroupsService implementado com validações
+- ✅ CashGroupsController com rotas protegidas por JWT
+- ✅ DTOs com class-validator em português
+- ✅ POST /cash-groups cria caixinha
+- ✅ GET /cash-groups lista apenas caixinhas do usuário autenticado
+- ✅ GET /cash-groups/:id retorna uma caixinha
+- ✅ PATCH /cash-groups/:id atualiza caixinha
+- ✅ DELETE /cash-groups/:id arquiva caixinha (soft delete)
+- ✅ Validação de propriedade (apenas dono pode editar/ver)
+- ✅ Tipos TypeScript criados no frontend
+- ✅ API client frontend implementado
+- ✅ Componente Modal premium criado
+- ✅ Página de caixinhas com listagem
+- ✅ Formulário de criar caixinha
+- ✅ Formulário de editar caixinha
+- ✅ Toggle pausar/ativar caixinha
+- ✅ Empty state premium
+- ✅ Dashboard atualizado com contagem real
+- ✅ Rota /caixinhas adicionada
+- ✅ Build em produção funciona
+- ✅ Containers (healthy) após rebuild
+- ✅ Acesso público via HTTPS funcionando
+
+✅ Status: Validada
+
+Comandos de validação:
+```bash
+# Login e criação de caixinha
+curl -s -X POST http://127.0.0.1:3401/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@cotacerta.com","password":"admin123456"}' > /tmp/login.json
+
+TOKEN=$(cat /tmp/login.json | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+
+# Criar caixinha
+curl -X POST http://127.0.0.1:3401/cash-groups \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Teste 2026","cycleYear":2026,"quotaValue":100,"dueDay":10}'
+
+# Listar caixinhas
+curl http://127.0.0.1:3401/cash-groups \
+  -H "Authorization: Bearer $TOKEN"
 
 # Containers healthy
 docker compose ps

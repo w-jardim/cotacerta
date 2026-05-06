@@ -14,12 +14,12 @@ RUN npm ci
 COPY apps/api ./apps/api
 COPY packages ./packages
 
-# Build da API
+# Gerar Prisma Client ANTES do build
 WORKDIR /app/apps/api
-RUN npm run build
-
-# Gerar Prisma Client
 RUN npx prisma generate
+
+# Build da API
+RUN npm run build
 
 # Production stage
 FROM node:20-alpine

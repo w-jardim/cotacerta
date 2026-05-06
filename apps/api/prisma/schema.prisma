@@ -22,6 +22,19 @@ enum UserStatus {
   INACTIVE
 }
 
+enum CashGroupStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum MemberStatus {
+  ACTIVE
+  BLOCKED
+  INACTIVE
+}
+
 model User {
   id           String     @id @default(cuid())
   name         String
@@ -32,5 +45,45 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
+  cashGroups   CashGroup[]
+
   @@map("users")
+}
+
+model CashGroup {
+  id                      String          @id @default(cuid())
+  ownerUserId             String          @map("owner_user_id")
+  name                    String
+  description             String?
+  cycleYear               Int             @map("cycle_year")
+  quotaValue              Decimal         @map("quota_value") @db.Decimal(10, 2)
+  dueDay                  Int             @map("due_day")
+  maxQuotasPerMember      Int             @default(2) @map("max_quotas_per_member")
+  defaultLoanInterestRate Decimal         @default(30.00) @map("default_loan_interest_rate") @db.Decimal(5, 2)
+  status                  CashGroupStatus @default(ACTIVE)
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+
+  owner                   User            @relation(fields: [ownerUserId], references: [id])
+  members                 Member[]
+
+  @@index([ownerUserId])
+  @@map("cash_groups")
+}
+
+model Member {
+  id           String       @id @default(cuid())
+  cashGroupId  String       @map("cash_group_id")
+  name         String
+  phone        String?
+  pixKey       String?      @map("pix_key")
+  quotasCount  Int          @map("quotas_count")
+  status       MemberStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  cashGroup    CashGroup    @relation(fields: [cashGroupId], references: [id])
+
+  @@index([cashGroupId])
+  @@map("members")
 }

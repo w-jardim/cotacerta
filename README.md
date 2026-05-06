@@ -29,7 +29,32 @@ Dados financeiros nunca podem misturar grupos diferentes.
 
 ## Status
 
-Projeto em fase inicial de documentação e especificação.
+Projeto em desenvolvimento ativo.
+
+### Acesso ao Sistema
+
+**URL de Produção:** https://cotacerta.gardenwjs.tech
+
+**Credenciais Padrão:**
+- Email: `admin@cotacerta.com`
+- Senha: `admin123456`
+- Role: Gestor Master
+
+> ⚠️ **Importante:** Altere a senha padrão em ambiente de produção.
+
+### Desenvolvimento Local
+
+```bash
+# Subir containers
+docker compose up -d
+
+# Acessar localmente
+Web: http://127.0.0.1:3411
+API: http://127.0.0.1:3401
+
+# Executar seed (criar usuário padrão)
+docker exec cotacerta-api npm run prisma:seed
+```
 
 ## Fases previstas
 

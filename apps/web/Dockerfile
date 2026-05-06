@@ -16,6 +16,12 @@ COPY packages ./packages
 
 # Build da Web com Vite
 WORKDIR /app/apps/web
+
+# Define variável de ambiente para build
+# Usa /api como proxy reverso do Nginx
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 # Production stage com Nginx
