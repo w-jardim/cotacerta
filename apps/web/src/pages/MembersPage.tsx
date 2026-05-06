@@ -1,19 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { AuthenticatedLayout } from '../components/layout/AuthenticatedLayout';
-import { Modal } from '../components/ui/Modal';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
+import { ActionButton } from '../components/ui/ActionButton';
+import { Alert } from '../components/ui/Alert';
 import { BackButton } from '../components/ui/BackButton';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Input } from '../components/ui/Input';
+import { Modal } from '../components/ui/Modal';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatCard } from '../components/ui/StatCard';
 import { cashGroupsApi } from '../features/cash-groups/api';
 import { membersApi } from '../features/members/api';
 import type { CashGroup } from '../features/cash-groups/types';
-import type { Member, CreateMemberData, UpdateMemberData } from '../features/members/types';
+import type { CreateMemberData, Member, UpdateMemberData } from '../features/members/types';
 
 export function MembersPage() {
   const { cashGroupId } = useParams<{ cashGroupId: string }>();
-  
+
   const [cashGroup, setCashGroup] = useState<CashGroup | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,8 +27,6 @@ export function MembersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-
-  // Form states
   const [formData, setFormData] = useState<CreateMemberData>({
     cashGroupId: cashGroupId || '',
     name: '',
@@ -48,18 +52,13 @@ export function MembersPage() {
     try {
       setIsLoading(true);
       setError('');
-      console.log('Carregando caixinha:', cashGroupId);
-      
       const [groupData, membersData] = await Promise.all([
         cashGroupsApi.getOne(cashGroupId),
         membersApi.getAll(cashGroupId),
       ]);
-      
-      console.log('Dados carregados:', { groupData, membersData });
       setCashGroup(groupData);
       setMembers(membersData);
     } catch (err: any) {
-      console.error('Erro ao carregar:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Erro ao carregar dados';
       setError(errorMessage);
       setCashGroup(null);
@@ -97,8 +96,8 @@ export function MembersPage() {
     setEditingMember(null);
   }
 
-  async function handleCreate(e: FormEvent) {
-    e.preventDefault();
+  async function handleCreate(event: FormEvent) {
+    event.preventDefault();
     try {
       setIsSubmitting(true);
       setError('');
@@ -112,8 +111,8 @@ export function MembersPage() {
     }
   }
 
-  async function handleUpdate(e: FormEvent) {
-    e.preventDefault();
+  async function handleUpdate(event: FormEvent) {
+    event.preventDefault();
     if (!editingMember) return;
 
     try {
@@ -146,7 +145,7 @@ export function MembersPage() {
   }
 
   async function handleDelete(member: Member) {
-    if (!confirm(`Tem certeza que deseja remover ${member.name}?`)) return;
+    if (!window.confirm(`Tem certeza que deseja remover ${member.name}?`)) return;
 
     try {
       await membersApi.delete(member.id);
@@ -156,17 +155,15 @@ export function MembersPage() {
     }
   }
 
-  const activeMembers = members.filter((m) => m.status === 'ACTIVE');
-  const totalQuotas = activeMembers.reduce((sum, m) => sum + m.quotasCount, 0);
-  const totalMonthly = cashGroup
-    ? parseFloat(cashGroup.quotaValue) * totalQuotas
-    : 0;
+  const activeMembers = members.filter((member) => member.status === 'ACTIVE');
+  const totalQuotas = activeMembers.reduce((sum, member) => sum + member.quotasCount, 0);
+  const totalMonthly = cashGroup ? parseFloat(cashGroup.quotaValue) * totalQuotas : 0;
 
   if (isLoading) {
     return (
       <AuthenticatedLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-slate-600">Carregando...</div>
+        <div className="flex items-center justify-center py-16">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-teal-700" />
         </div>
       </AuthenticatedLayout>
     );
@@ -175,183 +172,93 @@ export function MembersPage() {
   if (!isLoading && !cashGroup) {
     return (
       <AuthenticatedLayout>
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-lg font-semibold text-slate-900 mb-2">
-            Caixinha não encontrada
+        <div className="space-y-4 py-12 text-center">
+          <div className="text-lg font-semibold text-slate-900">Caixinha não encontrada</div>
+          {error && <Alert variant="error">{error}</Alert>}
+          <div className="flex justify-center">
+            <BackButton to="/caixinhas" label="Voltar para caixinhas" />
           </div>
-          {error && (
-            <div className="text-sm text-red-600 mb-4">{error}</div>
-          )}
-          <BackButton to="/caixinhas" label="Voltar para Caixinhas" />
         </div>
       </AuthenticatedLayout>
     );
   }
 
-  // TypeScript guard - se chegou aqui, cashGroup existe
-  if (!cashGroup) {
-    return null;
-  }
+  if (!cashGroup) return null;
 
   return (
     <AuthenticatedLayout>
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <BackButton to="/caixinhas" label="Voltar para Caixinhas" />
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">
-                {cashGroup.name}
-              </h1>
-              <p className="mt-2 text-slate-600">
-                Ano {cashGroup.cycleYear} • Cota R$ {cashGroup.quotaValue} •
-                Vencimento dia {cashGroup.dueDay}
-              </p>
-            </div>
-            <Button onClick={openCreateModal}>Adicionar Cotista</Button>
-          </div>
+      <div className="space-y-8">
+        <div className="cc-section-head">
+          <PageHeader
+            backTo="/caixinhas"
+            backLabel="Voltar para caixinhas"
+            title={cashGroup.name}
+            subtitle={`Ano ${cashGroup.cycleYear} • Cota R$ ${cashGroup.quotaValue} • Vencimento dia ${cashGroup.dueDay}`}
+          />
+          <Button onClick={openCreateModal}>Adicionar cotista</Button>
         </div>
 
-        {/* Stats */}
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 p-6">
-            <div className="text-sm font-medium text-blue-900">
-              Total de Cotistas
-            </div>
-            <div className="mt-2 text-3xl font-bold text-blue-900">
-              {activeMembers.length}
-            </div>
-          </div>
-          <div className="rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 p-6">
-            <div className="text-sm font-medium text-purple-900">
-              Total de Cotas
-            </div>
-            <div className="mt-2 text-3xl font-bold text-purple-900">
-              {totalQuotas}
-            </div>
-          </div>
-          <div className="rounded-xl bg-gradient-to-br from-green-50 to-green-100 p-6">
-            <div className="text-sm font-medium text-green-900">
-              Arrecadação Mensal
-            </div>
-            <div className="mt-2 text-3xl font-bold text-green-900">
-              R$ {totalMonthly.toFixed(2)}
-            </div>
-          </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard tone="brand" value={activeMembers.length} label="Cotistas ativos" />
+          <StatCard tone="success" value={totalQuotas} label="Total de cotas" />
+          <StatCard tone="warning" value={`R$ ${totalMonthly.toFixed(2)}`} label="Arrecadação mensal" />
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm text-red-800">
-            {error}
-          </div>
-        )}
+        {error && <Alert variant="error">{error}</Alert>}
 
-        {/* Members List */}
         {members.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-            <div className="mx-auto max-w-sm">
-              <div className="text-5xl">👥</div>
-              <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                Nenhum cotista cadastrado
-              </h3>
-              <p className="mt-2 text-sm text-slate-600">
-                Adicione cotistas para começar a gerenciar as cotas desta
-                caixinha.
-              </p>
-              <Button onClick={openCreateModal} className="mt-6">
-                Adicionar Primeiro Cotista
-              </Button>
-            </div>
-          </div>
+          <EmptyState
+            icon={<span className="text-3xl font-bold text-slate-400">CT</span>}
+            title="Nenhum cotista cadastrado"
+            description="Adicione participantes para começar a gerenciar cotas, Pix e cobranças desta caixinha."
+            action={<Button onClick={openCreateModal}>Adicionar primeiro cotista</Button>}
+          />
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full">
-              <thead className="bg-slate-50">
+          <div className="cc-table-shell overflow-x-auto">
+            <table className="cc-table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                    Nome
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                    Telefone
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                    Chave Pix
-                  </th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-slate-900">
-                    Cotas
-                  </th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-slate-900">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900">
-                    Ações
-                  </th>
+                  <th className="cc-th">Cotista</th>
+                  <th className="cc-th">Telefone</th>
+                  <th className="cc-th">Chave Pix</th>
+                  <th className="cc-th text-center">Cotas</th>
+                  <th className="cc-th text-center">Status</th>
+                  <th className="cc-th text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody>
                 {members.map((member) => (
-                  <tr
-                    key={member.id}
-                    className={
-                      member.status !== 'ACTIVE' ? 'bg-slate-50 opacity-60' : ''
-                    }
-                  >
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">
-                        {member.name}
-                      </div>
+                  <tr key={member.id} className={member.status !== 'ACTIVE' ? 'bg-slate-50/90' : 'hover:bg-slate-50/60'}>
+                    <td className="cc-td">
+                      <div className="font-semibold text-slate-900">{member.name}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {member.phone || '—'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {member.pixKey || '—'}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-900">
-                        {member.quotasCount}{' '}
-                        {member.quotasCount === 1 ? 'cota' : 'cotas'}
+                    <td className="cc-td">{member.phone || '—'}</td>
+                    <td className="cc-td">{member.pixKey || '—'}</td>
+                    <td className="cc-td text-center">
+                      <span className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                        {member.quotasCount} {member.quotasCount === 1 ? 'cota' : 'cotas'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                          member.status === 'ACTIVE'
-                            ? 'bg-green-100 text-green-800'
-                            : member.status === 'BLOCKED'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-slate-100 text-slate-800'
-                        }`}
-                      >
+                    <td className="cc-td text-center">
+                      <Badge status={member.status}>
                         {member.status === 'ACTIVE'
                           ? 'Ativo'
                           : member.status === 'BLOCKED'
                             ? 'Bloqueado'
                             : 'Inativo'}
-                      </span>
+                      </Badge>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(member)}
-                          className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                        >
+                    <td className="cc-td">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <ActionButton variant="primary" onClick={() => openEditModal(member)}>
                           Editar
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(member)}
-                          className="text-sm font-medium text-amber-600 hover:text-amber-800"
-                        >
+                        </ActionButton>
+                        <ActionButton variant="warning" onClick={() => handleToggleStatus(member)}>
                           {member.status === 'ACTIVE' ? 'Bloquear' : 'Ativar'}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(member)}
-                          className="text-sm font-medium text-red-600 hover:text-red-800"
-                        >
+                        </ActionButton>
+                        <ActionButton variant="danger" onClick={() => handleDelete(member)}>
                           Remover
-                        </button>
+                        </ActionButton>
                       </div>
                     </td>
                   </tr>
@@ -361,25 +268,14 @@ export function MembersPage() {
           </div>
         )}
 
-        {/* Create Modal */}
-        <Modal
-          isOpen={isCreateModalOpen}
-          onClose={closeModals}
-          title="Adicionar Cotista"
-        >
+        <Modal isOpen={isCreateModalOpen} onClose={closeModals} title="Adicionar cotista">
           <form onSubmit={handleCreate} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
+            {error && <Alert variant="error">{error}</Alert>}
 
             <Input
-              label="Nome *"
+              label="Nome"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(event) => setFormData({ ...formData, name: event.target.value })}
               required
               placeholder="Nome completo"
             />
@@ -388,9 +284,7 @@ export function MembersPage() {
               label="Telefone"
               type="tel"
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
+              onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
               placeholder="(00) 00000-0000"
               maxLength={15}
             />
@@ -398,41 +292,28 @@ export function MembersPage() {
             <Input
               label="Chave Pix"
               value={formData.pixKey}
-              onChange={(e) =>
-                setFormData({ ...formData, pixKey: e.target.value })
-              }
+              onChange={(event) => setFormData({ ...formData, pixKey: event.target.value })}
               placeholder="Email, telefone, CPF ou chave aleatória"
             />
 
             <Input
-              label={`Quantidade de Cotas * (máx: ${cashGroup.maxQuotasPerMember})`}
+              label={`Quantidade de cotas (máx: ${cashGroup.maxQuotasPerMember})`}
               type="number"
               min="1"
               max={cashGroup.maxQuotasPerMember}
               value={formData.quotasCount}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  quotasCount: parseInt(e.target.value) || 1,
-                })
+              onChange={(event) =>
+                setFormData({ ...formData, quotasCount: parseInt(event.target.value, 10) || 1 })
               }
               required
             />
 
-            <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
-              <strong>Valor mensal:</strong> R${' '}
-              {(parseFloat(cashGroup.quotaValue) * formData.quotasCount).toFixed(
-                2,
-              )}
+            <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
+              Valor mensal estimado: R$ {(parseFloat(cashGroup.quotaValue) * formData.quotasCount).toFixed(2)}
             </div>
 
             <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={closeModals}
-                className="flex-1"
-              >
+              <Button type="button" variant="secondary" onClick={closeModals} className="flex-1">
                 Cancelar
               </Button>
               <Button type="submit" isLoading={isSubmitting} className="flex-1">
@@ -442,25 +323,14 @@ export function MembersPage() {
           </form>
         </Modal>
 
-        {/* Edit Modal */}
-        <Modal
-          isOpen={isEditModalOpen}
-          onClose={closeModals}
-          title="Editar Cotista"
-        >
+        <Modal isOpen={isEditModalOpen} onClose={closeModals} title="Editar cotista">
           <form onSubmit={handleUpdate} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
+            {error && <Alert variant="error">{error}</Alert>}
 
             <Input
-              label="Nome *"
+              label="Nome"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(event) => setFormData({ ...formData, name: event.target.value })}
               required
               placeholder="Nome completo"
             />
@@ -469,9 +339,7 @@ export function MembersPage() {
               label="Telefone"
               type="tel"
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
+              onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
               placeholder="(00) 00000-0000"
               maxLength={15}
             />
@@ -479,41 +347,28 @@ export function MembersPage() {
             <Input
               label="Chave Pix"
               value={formData.pixKey}
-              onChange={(e) =>
-                setFormData({ ...formData, pixKey: e.target.value })
-              }
+              onChange={(event) => setFormData({ ...formData, pixKey: event.target.value })}
               placeholder="Email, telefone, CPF ou chave aleatória"
             />
 
             <Input
-              label={`Quantidade de Cotas * (máx: ${cashGroup.maxQuotasPerMember})`}
+              label={`Quantidade de cotas (máx: ${cashGroup.maxQuotasPerMember})`}
               type="number"
               min="1"
               max={cashGroup.maxQuotasPerMember}
               value={formData.quotasCount}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  quotasCount: parseInt(e.target.value) || 1,
-                })
+              onChange={(event) =>
+                setFormData({ ...formData, quotasCount: parseInt(event.target.value, 10) || 1 })
               }
               required
             />
 
-            <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
-              <strong>Valor mensal:</strong> R${' '}
-              {(parseFloat(cashGroup.quotaValue) * formData.quotasCount).toFixed(
-                2,
-              )}
+            <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
+              Valor mensal estimado: R$ {(parseFloat(cashGroup.quotaValue) * formData.quotasCount).toFixed(2)}
             </div>
 
             <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={closeModals}
-                className="flex-1"
-              >
+              <Button type="button" variant="secondary" onClick={closeModals} className="flex-1">
                 Cancelar
               </Button>
               <Button type="submit" isLoading={isSubmitting} className="flex-1">

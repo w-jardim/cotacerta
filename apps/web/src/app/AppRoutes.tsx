@@ -5,6 +5,8 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { CashGroupsPage } from '../pages/CashGroupsPage';
 import { MembersPage } from '../pages/MembersPage';
 import { MembersListPage } from '../pages/MembersListPage';
+import { ChargesPage } from '../pages/ChargesPage';
+import { ChargesListPage } from '../pages/ChargesListPage';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '../features/auth/PublicOnlyRoute';
 
@@ -58,10 +60,28 @@ export function AppRoutes() {
         />
 
         <Route
+          path="/cobrancas"
+          element={
+            <ProtectedRoute>
+              <ChargesListPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/caixinhas/:cashGroupId/cotistas"
           element={
             <ProtectedRoute>
               <MembersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/caixinhas/:id/cobrancas"
+          element={
+            <ProtectedRoute>
+              <ChargesPage />
             </ProtectedRoute>
           }
         />

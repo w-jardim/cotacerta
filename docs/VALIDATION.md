@@ -222,3 +222,28 @@ Cada fase deve ter:
 - teste automatizado quando aplicável;
 - revisão de regra de negócio;
 - registro de riscos.
+
+## Fase 6 — Pix e comprovantes
+
+Validações:
+
+- ✅ Model `ChargePayment` criado no Prisma
+- ✅ Model `PaymentReceipt` criado no Prisma
+- ✅ Migration de pagamentos e comprovantes aplicada com sucesso
+- ✅ Pagamento pertence a uma cobrança, caixinha e cotista
+- ✅ Pagamento em cobrança de outro usuário retorna `403 Forbidden`
+- ✅ Registro manual de pagamento parcial funciona
+- ✅ Registro manual de pagamento total funciona
+- ✅ `amountPaid` da cobrança passa a ser calculado pelo histórico
+- ✅ `status` da cobrança é recalculado para `PENDING`, `PARTIAL` ou `PAID`
+- ✅ `paidAt` da cobrança reflete o pagamento mais recente
+- ✅ Cobrança com pagamentos não pode ser cancelada
+- ✅ Comprovante simples pode ser anexado ao pagamento
+- ✅ Tipos de comprovante aceitos: JPG, PNG, WEBP e PDF
+- ✅ Limite de comprovante de até 5MB validado
+- ✅ GET de detalhe da cobrança retorna histórico de pagamentos
+- ✅ Frontend exibe histórico e comprovante associado
+- ✅ Build da API funciona
+- ✅ Build do Web funciona
+
+✅ Status: Validada

@@ -1,15 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   color: #172033;
-  background: #f6f7fb;
+  background:
+    radial-gradient(circle at top, rgba(15, 118, 110, 0.12), transparent 30%),
+    linear-gradient(180deg, #f7faf9 0%, #eef3f8 50%, #f7f9fc 100%);
+  --cc-bg: #f4f7fb;
+  --cc-surface: rgba(255, 255, 255, 0.9);
+  --cc-surface-strong: #ffffff;
+  --cc-border: rgba(148, 163, 184, 0.22);
+  --cc-border-strong: rgba(71, 85, 105, 0.14);
+  --cc-text: #0f172a;
+  --cc-text-muted: #475569;
+  --cc-brand: #0f766e;
+  --cc-brand-dark: #115e59;
+  --cc-shadow: 0 24px 60px rgba(15, 23, 42, 0.09);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  color: var(--cc-text);
+  background: var(--cc-bg);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(15, 118, 110, 0.18);
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  .cc-panel {
+    @apply rounded-[28px] border bg-white/90 shadow-sm backdrop-blur-sm;
+    border-color: var(--cc-border);
+    box-shadow: var(--cc-shadow);
+  }
+
+  .cc-panel-subtle {
+    @apply rounded-[24px] border bg-white/75 backdrop-blur-sm;
+    border-color: var(--cc-border);
+  }
+
+  .cc-alert {
+    @apply rounded-2xl border px-4 py-3 text-sm;
+  }
+
+  .cc-table-shell {
+    @apply overflow-hidden rounded-[28px] border bg-white/90 shadow-sm backdrop-blur-sm;
+    border-color: var(--cc-border);
+    box-shadow: var(--cc-shadow);
+  }
+
+  .cc-table {
+    @apply min-w-full divide-y;
+    border-color: var(--cc-border);
+  }
+
+  .cc-table thead {
+    @apply bg-slate-50/90;
+  }
+
+  .cc-table tbody {
+    @apply divide-y bg-white/80;
+    border-color: var(--cc-border);
+  }
+
+  .cc-th {
+    @apply px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500;
+  }
+
+  .cc-td {
+    @apply px-5 py-4 text-sm text-slate-700;
+  }
+
+  .cc-section-head {
+    @apply flex flex-col gap-4 md:flex-row md:items-end md:justify-between;
+  }
 }

@@ -65,6 +65,8 @@
 - anexar comprovante
 - atualizar status
 
+✅ Status: Concluída
+
 ## Fase 7 — Quem deve
 
 - dashboard

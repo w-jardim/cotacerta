@@ -3,6 +3,8 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/auth-context';
 import { PublicLayout } from '../components/layout/PublicLayout';
+import { Alert } from '../components/ui/Alert';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 
@@ -38,20 +40,19 @@ export function RegisterPage() {
 
   return (
     <PublicLayout>
-      <div className="rounded-2xl bg-white p-8 shadow-lg">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">Criar conta</h2>
-          <p className="mt-2 text-sm text-slate-600">
+      <Card className="p-8">
+        <div className="mb-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">
+            Novo acesso
+          </p>
+          <h2 className="mt-3 text-3xl font-extrabold text-slate-950">Criar sua conta</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
             Comece a gerenciar suas caixinhas hoje mesmo
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
-              {error}
-            </div>
-          )}
+          {error && <Alert variant="error">{error}</Alert>}
 
           <Input
             label="Nome completo"
@@ -94,13 +95,13 @@ export function RegisterPage() {
             Já tem uma conta?{' '}
             <Link
               to="/login"
-              className="font-semibold text-slate-900 hover:underline"
+              className="font-semibold text-teal-700 hover:text-teal-800 hover:underline"
             >
               Fazer login
             </Link>
           </p>
         </div>
-      </div>
+      </Card>
     </PublicLayout>
   );
 }

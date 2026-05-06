@@ -1,183 +1,165 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthenticatedLayout } from '../components/layout/AuthenticatedLayout';
+import { Card } from '../components/ui/Card';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatCard } from '../components/ui/StatCard';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 import { useAuth } from '../features/auth/auth-context';
 import { cashGroupsApi } from '../features/cash-groups/api';
 import { membersApi } from '../features/members/api';
+import { chargesApi } from '../features/charges/api';
 
 export function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [cashGroupsCount, setCashGroupsCount] = useState(0);
   const [membersCount, setMembersCount] = useState(0);
+  const [chargesCount, setChargesCount] = useState(0);
 
   useEffect(() => {
     async function loadStats() {
       try {
-        const [cashGroups, members] = await Promise.all([
+        const [cashGroups, members, charges] = await Promise.all([
           cashGroupsApi.getAll(),
           membersApi.getAllUserMembers(),
+          chargesApi.getAllUserCharges(),
         ]);
         setCashGroupsCount(cashGroups.length);
-        setMembersCount(members.filter((m: any) => m.status === 'ACTIVE').length);
+        setMembersCount(members.filter((member: any) => member.status === 'ACTIVE').length);
+        setChargesCount(charges.length);
       } catch (err) {
         console.error('Erro ao carregar estatísticas', err);
       }
     }
+
     loadStats();
   }, []);
 
   const modules = [
     {
       name: 'Caixinhas',
-      description: 'Crie e gerencie suas caixinhas coletivas',
-      icon: '🗂️',
+      description: 'Crie, organize e acompanhe cada ciclo sem misturar dados financeiros.',
       status: 'Disponível',
       path: '/caixinhas',
     },
     {
       name: 'Cotistas',
-      description: 'Cadastre e controle participantes',
-      icon: '👥',
+      description: 'Centralize os participantes, cotas ativas e dados de contato.',
       status: 'Disponível',
       path: '/cotistas',
     },
     {
       name: 'Cobranças',
-      description: 'Gere cobranças mensais automaticamente',
-      icon: '💳',
-      status: 'Em breve',
+      description: 'Acompanhe valores pendentes, pagos e cobranças do mês.',
+      status: 'Disponível',
+      path: '/cobrancas',
     },
     {
       name: 'Pagamentos',
-      description: 'Registre Pix e anexe comprovantes',
-      icon: '💰',
-      status: 'Em breve',
+      description: 'Registre Pix, anexe comprovantes e acompanhe o histórico dos recebimentos.',
+      status: 'Disponível',
+      path: '/cobrancas',
     },
     {
       name: 'Empréstimos',
-      description: 'Controle empréstimos com juros',
-      icon: '📊',
+      description: 'Gestão de saldo devedor e cálculo de juros por cotista.',
       status: 'Em breve',
     },
     {
-      name: 'Fechamento Anual',
-      description: 'Calcule divisão final por cota',
-      icon: '📅',
+      name: 'Fechamento anual',
+      description: 'Apuração final por cota com visibilidade do resultado.',
       status: 'Em breve',
     },
   ];
 
   return (
     <AuthenticatedLayout>
-      <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="rounded-xl bg-white p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-slate-900">
-            Bem-vindo, {user?.name?.split(' ')[0]}! 👋
-          </h2>
-          <p className="mt-2 text-slate-600">
-            Sistema pronto para gerenciar suas caixinhas de forma profissional
-          </p>
+      <div className="space-y-8">
+        <Card className="overflow-hidden p-8">
+          <div className="cc-section-head">
+            <PageHeader
+              title={`Olá, ${user?.name?.split(' ')[0] || 'gestor'}`}
+              subtitle="Seu painel concentra as caixinhas, cotistas e cobranças em uma visão única, clara e pronta para ação."
+            />
+            <Button onClick={() => navigate('/caixinhas')}>Abrir caixinhas</Button>
+          </div>
+        </Card>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard
+            tone="brand"
+            icon={<span className="text-lg font-bold text-teal-700">CX</span>}
+            value={cashGroupsCount}
+            label="Caixinhas"
+            footnote="Estruturas ativas sob sua gestão"
+          />
+          <StatCard
+            tone="success"
+            icon={<span className="text-lg font-bold text-emerald-700">CT</span>}
+            value={membersCount}
+            label="Cotistas ativos"
+            footnote="Participantes vinculados às caixinhas"
+          />
+          <StatCard
+            tone="warning"
+            icon={<span className="text-lg font-bold text-amber-700">CB</span>}
+            value={chargesCount}
+            label="Cobranças listadas"
+            footnote="Pendências e lançamentos recentes"
+          />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-slate-100 p-3">
-                <svg className="h-6 w-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a 2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{cashGroupsCount}</p>
-                <p className="text-sm text-slate-600">Caixinhas</p>
-              </div>
-            </div>
+        <section className="space-y-4">
+          <div className="cc-section-head">
+            <PageHeader
+              title="Módulos do sistema"
+              subtitle="Os módulos disponíveis seguem a mesma base visual e priorizam rapidez operacional."
+            />
           </div>
 
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-slate-100 p-3">
-                <svg className="h-6 w-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{membersCount}</p>
-                <p className="text-sm text-slate-600">Cotistas</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-slate-100 p-3">
-                <svg className="h-6 w-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">0</p>
-                <p className="text-sm text-slate-600">Pagamentos</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Modules Grid */}
-        <div>
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">Módulos do Sistema</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {modules.map((module) => (
-              <div
+              <Card
                 key={module.name}
-                onClick={() => module.path && navigate(module.path)}
-                className={`group rounded-xl bg-white p-6 shadow-sm transition-all ${
-                  module.path ? 'cursor-pointer hover:shadow-md' : ''
+                className={`flex h-full flex-col justify-between p-6 transition ${
+                  module.path ? 'cursor-pointer hover:-translate-y-1 hover:shadow-xl' : ''
                 }`}
+                onClick={() => module.path && navigate(module.path)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{module.icon}</span>
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h4 className="font-semibold text-slate-900">{module.name}</h4>
-                      <p className="mt-1 text-sm text-slate-600">{module.description}</p>
+                      <h3 className="text-xl font-bold text-slate-950">{module.name}</h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{module.description}</p>
                     </div>
+                    <Badge status={module.status === 'Disponível' ? 'ACTIVE' : 'PAUSED'}>
+                      {module.status}
+                    </Badge>
                   </div>
                 </div>
-                <div className="mt-4">
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                    module.status === 'Disponível'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {module.status}
-                  </span>
+
+                <div className="mt-6">
+                  {module.path ? (
+                    <Button variant="secondary" className="w-full">
+                      Acessar módulo
+                    </Button>
+                  ) : (
+                    <p className="text-sm font-semibold text-slate-500">Disponível nas próximas fases do roadmap.</p>
+                  )}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Info Card */}
-        <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6">
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-white p-2">
-              <svg className="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h4 className="font-semibold text-slate-900">Sistema em desenvolvimento</h4>
-              <p className="mt-1 text-sm text-slate-600">
-                Os módulos estão sendo implementados seguindo o roadmap do projeto.
-                Em breve você poderá criar caixinhas, cadastrar cotistas e muito mais.
-              </p>
-            </div>
-          </div>
-        </div>
+        <Card variant="subtle" className="p-6">
+          <h3 className="text-lg font-bold text-slate-950">Foco do MVP</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            A prioridade atual continua sendo gestão de caixinhas, cotistas, cobranças e leitura rápida de quem deve, com fluxo simples para o gestor master.
+          </p>
+        </Card>
       </div>
     </AuthenticatedLayout>
   );
