@@ -83,7 +83,8 @@ export function DashboardPage() {
     {
       name: 'Fechamento anual',
       description: 'Apuração final por cota com visibilidade do resultado.',
-      status: 'Em breve',
+      status: 'Disponível',
+      path: '/caixinhas',
     },
   ];
 
