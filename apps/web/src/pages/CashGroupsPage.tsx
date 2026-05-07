@@ -291,6 +291,14 @@ export function CashGroupsPage() {
                         <button
                           type="button"
                           className="cc-subtle-link"
+                          onClick={() => navigate(`/caixinhas/${cashGroup.id}/fechamento`)}
+                        >
+                          Fechamento
+                        </button>
+
+                        <button
+                          type="button"
+                          className="cc-subtle-link"
                           onClick={() => openEditModal(cashGroup)}
                         >
                           Editar
