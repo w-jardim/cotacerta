@@ -10,7 +10,9 @@ import { ChargesListPage } from '../pages/ChargesListPage';
 import { LoansPage } from '../pages/LoansPage';
 import { LoansListPage } from '../pages/LoansListPage';
 import { DebtorsPage } from '../pages/DebtorsPage';
-import { ProtectedRoute } from '../features/auth/ProtectedRoute';
+import { MemberPortalPage } from '../pages/MemberPortalPage';
+import { GestorRoute } from '../features/auth/GestorRoute';
+import { CotistaRoute } from '../features/auth/CotistaRoute';
 import { PublicOnlyRoute } from '../features/auth/PublicOnlyRoute';
 
 export function AppRoutes() {
@@ -38,81 +40,91 @@ export function AppRoutes() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <DashboardPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/caixinhas"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <CashGroupsPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/cotistas"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <MembersListPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/cobrancas"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <ChargesListPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/emprestimos"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <LoansListPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/quem-deve"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <DebtorsPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/caixinhas/:cashGroupId/cotistas"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <MembersPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/caixinhas/:id/cobrancas"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <ChargesPage />
-            </ProtectedRoute>
+            </GestorRoute>
           }
         />
 
         <Route
           path="/caixinhas/:cashGroupId/emprestimos"
           element={
-            <ProtectedRoute>
+            <GestorRoute>
               <LoansPage />
-            </ProtectedRoute>
+            </GestorRoute>
+          }
+        />
+
+        {/* Cotista portal routes */}
+        <Route
+          path="/meu-painel"
+          element={
+            <CotistaRoute>
+              <MemberPortalPage />
+            </CotistaRoute>
           }
         />
         

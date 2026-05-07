@@ -346,3 +346,86 @@ curl -I https://cotacerta.gardenwjs.tech
 ```
 
 ## Fase 9 — Painel do cotista
+
+Validações:
+
+- ✅ Vínculo 1:1 entre `User` e `Member` criado no Prisma (`userId` em Member)
+- ✅ Migration `20260509180000_add_member_user_link` aplicada em produção
+- ✅ `UserRole.COTISTA` já existia no schema; utilizado para role do cotista
+- ✅ `RolesGuard` implementado (`auth/guards/roles.guard.ts`)
+- ✅ Decorator `@Roles(...)` implementado (`auth/decorators/roles.decorator.ts`)
+- ✅ Todas as rotas de gestor bloqueadas para `COTISTA` (403 Forbidden)
+- ✅ Módulo `member-access` criado com endpoints de criação/bloqueio/ativação de acesso
+- ✅ POST `/cash-groups/:groupId/members/:memberId/access` cria User COTISTA vinculado ao Member
+- ✅ Senha provisória gerada pelo backend (10 chars alfanuméricos)
+- ✅ Senha provisória retornada uma única vez na resposta de criação
+- ✅ Senha provisória nunca armazenada em texto puro (bcrypt hash)
+- ✅ PATCH `.../access/block` bloqueia acesso do cotista
+- ✅ PATCH `.../access/activate` reativa acesso do cotista
+- ✅ GET `.../access` retorna status do acesso sem senha
+- ✅ Gestor só cria/gerencia acesso de cotistas das próprias caixinhas
+- ✅ Member duplicado retorna erro (sem duplicidade de acesso)
+- ✅ Módulo `member-portal` criado com endpoints exclusivos do cotista
+- ✅ GET `/member-portal/me` retorna dados do cotista logado
+- ✅ GET `/member-portal/groups` retorna caixinhas do cotista
+- ✅ GET `/member-portal/charges` retorna cobranças do cotista
+- ✅ GET `/member-portal/payments` retorna pagamentos do cotista
+- ✅ GET `/member-portal/loans` retorna empréstimos do cotista
+- ✅ GET `/member-portal/debts` retorna pendências do cotista
+- ✅ Cotista logado acessa apenas dados do próprio Member
+- ✅ Gestor não acessa `/member-portal/me` (403 Forbidden)
+- ✅ Cotista bloqueado não consegue logar ("Usuário inativo ou bloqueado")
+- ✅ Frontend: redirecionamento por role após login (COTISTA → /meu-painel, GESTOR → /dashboard)
+- ✅ Frontend: `GestorRoute` bloqueia COTISTA com redirect para /meu-painel
+- ✅ Frontend: `CotistaRoute` bloqueia não-COTISTA com redirect para /dashboard
+- ✅ Frontend: `MemberPortalPage` com dashboard do cotista
+- ✅ Frontend: badge "Acesso ativo" / "Sem acesso" na listagem de cotistas
+- ✅ Frontend: modal de criação de acesso com exibição da senha provisória
+- ✅ Frontend: botões copiar email, senha e link de acesso
+- ✅ Frontend: botões bloquear/ativar acesso do cotista
+- ✅ Build API passou
+- ✅ Build Web passou
+- ✅ Migration aplicada em produção
+- ✅ Containers healthy após rebuild
+- ✅ API pública continua OK
+- ✅ Web pública continua OK
+- ✅ Sem envio de email/SMS
+- ✅ Sem confirmação por email/SMS
+- ✅ Sem convite por token
+- ✅ Nenhuma regra financeira alterada
+
+✅ Status: Validada
+
+Comandos de validação:
+```bash
+# Login gestor
+LOGIN_RESPONSE=$(curl -s -X POST https://api.cotacerta.gardenwjs.tech/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@cotacerta.com","password":"admin123456"}')
+TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.accessToken')
+
+# Criar acesso para cotista
+curl -i -X POST https://api.cotacerta.gardenwjs.tech/cash-groups/$GROUP_ID/members/$MEMBER_ID/access \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"cotista@example.com"}'
+
+# Login cotista com senha provisória
+curl -s -X POST https://api.cotacerta.gardenwjs.tech/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"cotista@example.com","password":"SENHA_PROVISORIA"}' | jq .
+
+# Portal do cotista
+COTISTA_TOKEN="..."
+curl -s https://api.cotacerta.gardenwjs.tech/member-portal/me \
+  -H "Authorization: Bearer $COTISTA_TOKEN" | jq .
+
+# Cotista bloqueado em rota de gestor (deve retornar 403)
+curl -i https://api.cotacerta.gardenwjs.tech/cash-groups \
+  -H "Authorization: Bearer $COTISTA_TOKEN"
+
+# Bloquear acesso
+curl -X PATCH https://api.cotacerta.gardenwjs.tech/cash-groups/$GROUP_ID/members/$MEMBER_ID/access/block \
+  -H "Authorization: Bearer $TOKEN"
+```
+

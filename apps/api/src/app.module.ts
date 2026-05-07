@@ -9,6 +9,8 @@ import { MembersModule } from './members/members.module';
 import { ChargesModule } from './charges/charges.module';
 import { LoansModule } from './loans/loans.module';
 import { DebtorsModule } from './debtors/debtors.module';
+import { MemberAccessModule } from './member-access/member-access.module';
+import { MemberPortalModule } from './member-portal/member-portal.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { DebtorsModule } from './debtors/debtors.module';
     ChargesModule,
     LoansModule,
     DebtorsModule,
+    MemberAccessModule,
+    MemberPortalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

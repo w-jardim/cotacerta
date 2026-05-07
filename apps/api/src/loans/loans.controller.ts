@@ -10,13 +10,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { ListLoansDto } from './dto/list-loans.dto';
 import { RegisterLoanPaymentDto } from './dto/register-loan-payment.dto';
 import { LoansService } from './loans.service';
 
 @Controller('loans')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('GESTOR_MASTER', 'ADMIN_PLATFORM')
 export class LoansGlobalController {
   constructor(private readonly loansService: LoansService) {}
 
@@ -27,7 +30,8 @@ export class LoansGlobalController {
 }
 
 @Controller('cash-groups/:cashGroupId/loans')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('GESTOR_MASTER', 'ADMIN_PLATFORM')
 export class LoansController {
   constructor(private readonly loansService: LoansService) {}
 

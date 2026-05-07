@@ -2,11 +2,12 @@ import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from './auth-context';
 
-interface PublicOnlyRouteProps {
+interface GestorRouteProps {
   children: ReactNode;
 }
 
-export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
+/** Allows only GESTOR_MASTER and ADMIN_PLATFORM. Redirects COTISTA to /meu-painel. */
+export function GestorRoute({ children }: GestorRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
@@ -17,11 +18,12 @@ export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
     );
   }
 
-  if (isAuthenticated) {
-    if (user?.role === 'COTISTA') {
-      return <Navigate to="/meu-painel" replace />;
-    }
-    return <Navigate to="/dashboard" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role === 'COTISTA') {
+    return <Navigate to="/meu-painel" replace />;
   }
 
   return <>{children}</>;

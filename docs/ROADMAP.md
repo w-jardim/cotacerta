@@ -86,9 +86,16 @@
 
 ## Fase 9 — Painel do cotista
 
-- convite
-- acesso
-- visualização
+- gestor cria acesso do cotista manualmente;
+- senha provisória gerada pelo backend (nunca salva em texto puro);
+- cotista loga com email e senha provisória (role COTISTA);
+- cotista acessa /meu-painel com seus próprios dados;
+- cotista visualiza caixinhas, cobranças, pagamentos, empréstimos e pendências;
+- cotista não acessa rotas de gestor (403 Forbidden);
+- gestor bloqueia e reativa acesso do cotista;
+- email/SMS/convite por token fora do escopo desta fase.
+
+✅ Status: Concluída
 
 ## Fase 10 — Fechamento anual
 

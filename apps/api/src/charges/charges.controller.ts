@@ -14,9 +14,12 @@ import { GenerateChargesDto } from './dto/generate-charges.dto';
 import { MarkPaidDto } from './dto/mark-paid.dto';
 import { RegisterPaymentDto } from './dto/register-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('charges')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('GESTOR_MASTER', 'ADMIN_PLATFORM')
 export class ChargesGlobalController {
   constructor(private readonly chargesService: ChargesService) {}
 
@@ -27,7 +30,8 @@ export class ChargesGlobalController {
 }
 
 @Controller('cash-groups/:cashGroupId/charges')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('GESTOR_MASTER', 'ADMIN_PLATFORM')
 export class ChargesController {
   constructor(private readonly chargesService: ChargesService) {}
 

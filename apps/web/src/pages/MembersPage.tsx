@@ -14,8 +14,10 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
 import { cashGroupsApi } from '../features/cash-groups/api';
 import { membersApi } from '../features/members/api';
+import { memberAccessApi } from '../features/member-access/api';
 import type { CashGroup } from '../features/cash-groups/types';
 import type { CreateMemberData, Member, UpdateMemberData } from '../features/members/types';
+import type { CreateAccessResult } from '../features/member-access/types';
 
 export function MembersPage() {
   const { cashGroupId } = useParams<{ cashGroupId: string }>();
@@ -35,6 +37,15 @@ export function MembersPage() {
     quotasCount: 1,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Access management state
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [accessModalMember, setAccessModalMember] = useState<Member | null>(null);
+  const [accessEmail, setAccessEmail] = useState('');
+  const [accessResult, setAccessResult] = useState<CreateAccessResult | null>(null);
+  const [isSubmittingAccess, setIsSubmittingAccess] = useState(false);
+  const [accessError, setAccessError] = useState('');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     if (cashGroupId) {
@@ -94,6 +105,60 @@ export function MembersPage() {
     setIsCreateModalOpen(false);
     setIsEditModalOpen(false);
     setEditingMember(null);
+    setIsAccessModalOpen(false);
+    setAccessModalMember(null);
+    setAccessEmail('');
+    setAccessResult(null);
+    setAccessError('');
+    setCopiedField(null);
+  }
+
+  function openAccessModal(member: Member) {
+    setAccessModalMember(member);
+    setAccessEmail('');
+    setAccessResult(null);
+    setAccessError('');
+    setIsAccessModalOpen(true);
+  }
+
+  async function handleCreateAccess(event: FormEvent) {
+    event.preventDefault();
+    if (!accessModalMember || !cashGroupId) return;
+    try {
+      setIsSubmittingAccess(true);
+      setAccessError('');
+      const result = await memberAccessApi.createAccess(
+        cashGroupId,
+        accessModalMember.id,
+        accessEmail,
+      );
+      setAccessResult(result);
+      await loadData();
+    } catch (err: any) {
+      setAccessError(err.response?.data?.message || 'Erro ao criar acesso');
+    } finally {
+      setIsSubmittingAccess(false);
+    }
+  }
+
+  async function handleToggleUserAccess(member: Member) {
+    if (!cashGroupId || !member.userId) return;
+    try {
+      if (member.user?.status === 'ACTIVE') {
+        await memberAccessApi.blockAccess(cashGroupId, member.id);
+      } else {
+        await memberAccessApi.activateAccess(cashGroupId, member.id);
+      }
+      await loadData();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao alterar acesso');
+    }
+  }
+
+  async function copyToClipboard(text: string, field: string) {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
   async function handleCreate(event: FormEvent) {
@@ -223,6 +288,7 @@ export function MembersPage() {
                   <th className="cc-th">Chave Pix</th>
                   <th className="cc-th text-center">Cotas</th>
                   <th className="cc-th text-center">Status</th>
+                  <th className="cc-th text-center">Acesso</th>
                   <th className="cc-th text-right">Ações</th>
                 </tr>
               </thead>
@@ -248,11 +314,34 @@ export function MembersPage() {
                             : 'Inativo'}
                       </Badge>
                     </td>
+                    <td className="cc-td text-center">
+                      {member.userId ? (
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${member.user?.status === 'ACTIVE' ? 'bg-teal-50 text-teal-700' : 'bg-orange-50 text-orange-700'}`}>
+                          {member.user?.status === 'ACTIVE' ? '✓ Ativo' : '⊘ Bloqueado'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+                          Sem acesso
+                        </span>
+                      )}
+                    </td>
                     <td className="cc-td">
                       <div className="flex flex-wrap justify-end gap-2">
                         <ActionButton variant="primary" onClick={() => openEditModal(member)}>
                           Editar
                         </ActionButton>
+                        {!member.userId ? (
+                          <ActionButton variant="success" onClick={() => openAccessModal(member)}>
+                            Criar acesso
+                          </ActionButton>
+                        ) : (
+                          <ActionButton
+                            variant={member.user?.status === 'ACTIVE' ? 'warning' : 'success'}
+                            onClick={() => handleToggleUserAccess(member)}
+                          >
+                            {member.user?.status === 'ACTIVE' ? 'Bloquear acesso' : 'Ativar acesso'}
+                          </ActionButton>
+                        )}
                         <ActionButton variant="warning" onClick={() => handleToggleStatus(member)}>
                           {member.status === 'ACTIVE' ? 'Bloquear' : 'Ativar'}
                         </ActionButton>
@@ -376,6 +465,110 @@ export function MembersPage() {
               </Button>
             </div>
           </form>
+        </Modal>
+
+        {/* Modal: Criar acesso do cotista */}
+        <Modal
+          isOpen={isAccessModalOpen}
+          onClose={closeModals}
+          title={`Criar acesso — ${accessModalMember?.name}`}
+        >
+          {!accessResult ? (
+            <form onSubmit={handleCreateAccess} className="space-y-4">
+              {accessError && <Alert variant="error">{accessError}</Alert>}
+              <p className="text-sm text-slate-600">
+                O sistema irá gerar uma senha provisória. Você deverá enviá-la
+                manualmente ao cotista.
+              </p>
+              <Input
+                label="Email do cotista"
+                type="email"
+                value={accessEmail}
+                onChange={(e) => setAccessEmail(e.target.value)}
+                required
+                placeholder="cotista@email.com"
+              />
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={closeModals}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  isLoading={isSubmittingAccess}
+                  className="flex-1"
+                >
+                  Criar acesso
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+                ✓ Acesso criado com sucesso!
+              </div>
+              <div className="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900">
+                <strong>Guarde essa senha.</strong> Ela será exibida apenas agora.
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Email
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded-lg bg-slate-100 px-3 py-2 text-sm font-mono">
+                      {accessResult.user.email}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(accessResult.user.email, 'email')}
+                      className="rounded-lg bg-slate-200 px-3 py-2 text-xs font-semibold hover:bg-slate-300"
+                    >
+                      {copiedField === 'email' ? '✓ Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Senha provisória
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded-lg bg-slate-100 px-3 py-2 text-sm font-mono tracking-wider">
+                      {accessResult.temporaryPassword}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyToClipboard(accessResult.temporaryPassword, 'password')
+                      }
+                      className="rounded-lg bg-slate-200 px-3 py-2 text-xs font-semibold hover:bg-slate-300"
+                    >
+                      {copiedField === 'password' ? '✓ Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyToClipboard(
+                      `Email: ${accessResult.user.email}\nSenha: ${accessResult.temporaryPassword}\nAcesso: https://cotacerta.gardenwjs.tech`,
+                      'all',
+                    )
+                  }
+                  className="w-full rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
+                >
+                  {copiedField === 'all' ? '✓ Credenciais copiadas!' : 'Copiar todas as credenciais'}
+                </button>
+              </div>
+              <Button onClick={closeModals} variant="secondary" className="w-full">
+                Fechar
+              </Button>
+            </div>
+          )}
         </Modal>
       </div>
     </AuthenticatedLayout>

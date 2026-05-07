@@ -2,11 +2,12 @@ import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from './auth-context';
 
-interface PublicOnlyRouteProps {
+interface CotistaRouteProps {
   children: ReactNode;
 }
 
-export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
+/** Allows only COTISTA role. Redirects GESTOR_MASTER to /dashboard. */
+export function CotistaRoute({ children }: CotistaRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
@@ -17,10 +18,11 @@ export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
     );
   }
 
-  if (isAuthenticated) {
-    if (user?.role === 'COTISTA') {
-      return <Navigate to="/meu-painel" replace />;
-    }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== 'COTISTA') {
     return <Navigate to="/dashboard" replace />;
   }
 

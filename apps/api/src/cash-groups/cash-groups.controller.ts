@@ -10,12 +10,15 @@ import {
   Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CashGroupsService } from './cash-groups.service';
 import { CreateCashGroupDto } from './dto/create-cash-group.dto';
 import { UpdateCashGroupDto } from './dto/update-cash-group.dto';
 
 @Controller('cash-groups')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('GESTOR_MASTER', 'ADMIN_PLATFORM')
 export class CashGroupsController {
   constructor(private readonly cashGroupsService: CashGroupsService) {}
 

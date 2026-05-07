@@ -76,6 +76,7 @@ model User {
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
   cashGroups   CashGroup[]
+  member       Member?
 
   @@map("users")
 }
@@ -107,6 +108,7 @@ model CashGroup {
 model Member {
   id           String       @id @default(cuid())
   cashGroupId  String       @map("cash_group_id")
+  userId       String?      @unique @map("user_id")
   name         String
   phone        String?
   pixKey       String?      @map("pix_key")
@@ -116,6 +118,7 @@ model Member {
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
   cashGroup    CashGroup    @relation(fields: [cashGroupId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
   monthlyCharges MonthlyCharge[]
   chargePayments ChargePayment[]
   loans         Loan[]

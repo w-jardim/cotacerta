@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -19,6 +19,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect COTISTA users away from the root/dashboard
+  if (user?.role === 'COTISTA') {
+    const path = window.location.pathname;
+    if (!path.startsWith('/meu-painel')) {
+      return <Navigate to="/meu-painel" replace />;
+    }
   }
 
   return <>{children}</>;

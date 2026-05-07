@@ -7,11 +7,14 @@ import {
   Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { DebtorsService } from './debtors.service';
 import { DebtorsQueryDto } from './dto/debtors-query.dto';
 
 @Controller('debtors')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('GESTOR_MASTER', 'ADMIN_PLATFORM')
 export class DebtorsGlobalController {
   constructor(private readonly debtorsService: DebtorsService) {}
 
@@ -27,7 +30,8 @@ export class DebtorsGlobalController {
 }
 
 @Controller('cash-groups/:cashGroupId/debtors')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('GESTOR_MASTER', 'ADMIN_PLATFORM')
 export class DebtorsController {
   constructor(private readonly debtorsService: DebtorsService) {}
 

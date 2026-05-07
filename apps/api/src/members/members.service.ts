@@ -65,6 +65,9 @@ export class MembersService {
 
     return this.prisma.member.findMany({
       where: { cashGroupId },
+      include: {
+        user: { select: { id: true, email: true, status: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -72,7 +75,10 @@ export class MembersService {
   async findOne(userId: string, id: string) {
     const member = await this.prisma.member.findUnique({
       where: { id },
-      include: { cashGroup: true },
+      include: {
+        cashGroup: true,
+        user: { select: { id: true, email: true, status: true } },
+      },
     });
 
     if (!member) {
