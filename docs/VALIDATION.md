@@ -245,5 +245,26 @@ Validações:
 - ✅ Frontend exibe histórico e comprovante associado
 - ✅ Build da API funciona
 - ✅ Build do Web funciona
+- ✅ Vencimento da cobrança preserva o dia configurado sem regressão de fuso
+- ✅ Cobrança vencida recebe acréscimo conforme taxa da caixinha
+- ✅ Valor original e valor atualizado ficam visíveis para o gestor
 
 ✅ Status: Validada
+
+## Fase 7 — Empréstimos
+
+Validações:
+
+- ✅ Model `Loan` criado no Prisma
+- ✅ Model `LoanPayment` criado no Prisma
+- ✅ Empréstimos separados de `MonthlyCharge` e `Payment` de mensalidade
+- ✅ Empréstimo só pode ser criado para cotista ativo da própria caixinha
+- ✅ Juros são calculados no backend com base em principal + percentual
+- ✅ Empréstimo usa vencimento padrão até o fim do ciclo da caixinha
+- ✅ Fluxo de pagamento permite receber total ou apenas juros pendentes
+- ✅ Pagamentos parciais mudam o status para `PARTIAL`
+- ✅ Pagamentos totais mudam o status para `PAID`
+- ✅ Cancelamento lógico de empréstimo implementado
+- ✅ Cancelamento lógico de pagamento do empréstimo implementado
+- ✅ Visão global do módulo disponível no dashboard
+- ✅ Página da caixinha com resumo, lista, histórico e recebimentos

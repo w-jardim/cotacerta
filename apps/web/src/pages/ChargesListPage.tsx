@@ -55,7 +55,8 @@ export function ChargesListPage() {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR');
+  const formatDate = (dateString: string) =>
+    new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(dateString));
 
   const getStatusBadge = (status: string) => {
     const labels: Record<string, string> = {
@@ -157,6 +158,11 @@ export function ChargesListPage() {
                           <td className="cc-td">{charge.quotasCount}</td>
                           <td className="cc-td">
                             <div className="font-semibold text-slate-900">{formatCurrency(parseFloat(charge.amountDue))}</div>
+                            {parseFloat(charge.amountDue) > parseFloat(charge.baseAmount) && (
+                              <div className="mt-1 text-xs text-amber-700">
+                                Base: {formatCurrency(parseFloat(charge.baseAmount))}
+                              </div>
+                            )}
                             {parseFloat(charge.amountPaid) > 0 && (
                               <div className="mt-1 text-xs text-emerald-700">
                                 Pago: {formatCurrency(parseFloat(charge.amountPaid))}

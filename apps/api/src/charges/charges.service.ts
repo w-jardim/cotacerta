@@ -36,7 +36,9 @@ export class ChargesService {
       );
     }
 
-    const dueDate = new Date(referenceYear, referenceMonth - 1, cashGroup.dueDay);
+    const dueDate = new Date(
+      Date.UTC(referenceYear, referenceMonth - 1, cashGroup.dueDay, 12, 0, 0),
+    );
     const createdCharges: any[] = [];
     const existingCharges: any[] = [];
 
@@ -65,6 +67,7 @@ export class ChargesService {
           referenceMonth,
           referenceYear,
           quotasCount: member.quotasCount,
+          baseAmount: new Prisma.Decimal(amountDue),
           amountDue: new Prisma.Decimal(amountDue),
           dueDate,
           status: 'PENDING',
@@ -98,16 +101,16 @@ export class ChargesService {
   async findAll(
     userId: string,
     cashGroupId: string,
-    referenceMonth: number,
-    referenceYear: number,
+    referenceMonth?: number,
+    referenceYear?: number,
   ) {
-    await this.assertOwnedCashGroup(userId, cashGroupId);
+    const cashGroup = await this.assertOwnedCashGroup(userId, cashGroupId);
 
     const charges = await this.prisma.monthlyCharge.findMany({
       where: {
         cashGroupId,
-        referenceMonth,
-        referenceYear,
+        ...(referenceMonth ? { referenceMonth } : {}),
+        ...(referenceYear ? { referenceYear } : {}),
       },
       include: {
         member: {
@@ -119,30 +122,42 @@ export class ChargesService {
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { referenceYear: 'desc' },
+        { referenceMonth: 'desc' },
+        { dueDate: 'asc' },
+      ],
     });
 
+    const syncedCharges = await Promise.all(
+      charges.map((charge) => this.synchronizeChargeFinancials(charge, cashGroup)),
+    );
+
     const summary = {
-      totalDue: charges.reduce((sum, charge) => sum + Number(charge.amountDue), 0),
-      totalPaid: charges.reduce((sum, charge) => sum + Number(charge.amountPaid), 0),
-      totalPending: charges
+      totalDue: syncedCharges.reduce(
+        (sum, charge) => sum + Number(charge.amountDue),
+        0,
+      ),
+      totalPaid: syncedCharges.reduce(
+        (sum, charge) => sum + Number(charge.amountPaid),
+        0,
+      ),
+      totalPending: syncedCharges
         .filter((charge) => ['PENDING', 'OVERDUE', 'PARTIAL'].includes(charge.status))
         .reduce(
           (sum, charge) => sum + (Number(charge.amountDue) - Number(charge.amountPaid)),
           0,
         ),
-      totalCharges: charges.length,
-      pendingCount: charges.filter((charge) =>
+      totalCharges: syncedCharges.length,
+      pendingCount: syncedCharges.filter((charge) =>
         ['PENDING', 'OVERDUE', 'PARTIAL'].includes(charge.status),
       ).length,
-      paidCount: charges.filter((charge) => charge.status === 'PAID').length,
-      canceledCount: charges.filter((charge) => charge.status === 'CANCELED').length,
+      paidCount: syncedCharges.filter((charge) => charge.status === 'PAID').length,
+      canceledCount: syncedCharges.filter((charge) => charge.status === 'CANCELED').length,
     };
 
     return {
-      charges,
+      charges: syncedCharges,
       summary,
     };
   }
@@ -153,9 +168,9 @@ export class ChargesService {
     referenceMonth: number,
     referenceYear: number,
   ) {
-    await this.assertOwnedCashGroup(userId, cashGroupId);
+    const cashGroup = await this.assertOwnedCashGroup(userId, cashGroupId);
 
-    return this.prisma.monthlyCharge.findMany({
+    const charges = await this.prisma.monthlyCharge.findMany({
       where: {
         cashGroupId,
         referenceMonth,
@@ -178,12 +193,17 @@ export class ChargesService {
         dueDate: 'asc',
       },
     });
+
+    return Promise.all(
+      charges.map((charge) => this.synchronizeChargeFinancials(charge, cashGroup)),
+    );
   }
 
   async findOne(userId: string, cashGroupId: string, chargeId: string) {
     const charge = await this.assertOwnedCharge(userId, cashGroupId, chargeId);
+    await this.synchronizeChargeFinancials(charge, charge.cashGroup);
 
-    return this.prisma.monthlyCharge.findUnique({
+    const freshCharge = await this.prisma.monthlyCharge.findUnique({
       where: { id: charge.id },
       include: {
         member: {
@@ -204,6 +224,12 @@ export class ChargesService {
         },
       },
     });
+
+    if (!freshCharge) {
+      throw new NotFoundException('Cobrança não encontrada');
+    }
+
+    return this.attachChargeFinancialMeta(freshCharge, charge.cashGroup);
   }
 
   async registerPayment(
@@ -212,7 +238,8 @@ export class ChargesService {
     chargeId: string,
     dto: RegisterPaymentDto,
   ) {
-    const charge = await this.assertOwnedCharge(userId, cashGroupId, chargeId);
+    const rawCharge = await this.assertOwnedCharge(userId, cashGroupId, chargeId);
+    const charge = await this.synchronizeChargeFinancials(rawCharge, rawCharge.cashGroup);
 
     if (charge.status === 'CANCELED') {
       throw new ConflictException('Não é possível registrar pagamento em cobrança cancelada');
@@ -261,7 +288,7 @@ export class ChargesService {
       },
     });
 
-    await this.refreshChargeStatus(charge.id);
+    await this.refreshChargeStatus(charge.id, new Date(dto.paidAt));
 
     return this.prisma.chargePayment.findUnique({
       where: { id: payment.id },
@@ -277,7 +304,8 @@ export class ChargesService {
     chargeId: string,
     dto: MarkPaidDto,
   ) {
-    const charge = await this.assertOwnedCharge(userId, cashGroupId, chargeId);
+    const rawCharge = await this.assertOwnedCharge(userId, cashGroupId, chargeId);
+    const charge = await this.synchronizeChargeFinancials(rawCharge, rawCharge.cashGroup);
     const remainingAmount = Number(charge.amountDue) - Number(charge.amountPaid);
     const amountPaid = dto.amountPaid ?? remainingAmount;
 
@@ -293,7 +321,8 @@ export class ChargesService {
   }
 
   async cancel(userId: string, cashGroupId: string, chargeId: string) {
-    const charge = await this.assertOwnedCharge(userId, cashGroupId, chargeId);
+    const rawCharge = await this.assertOwnedCharge(userId, cashGroupId, chargeId);
+    const charge = await this.synchronizeChargeFinancials(rawCharge, rawCharge.cashGroup);
 
     const paymentsCount = await this.prisma.chargePayment.count({
       where: { monthlyChargeId: charge.id },
@@ -309,6 +338,7 @@ export class ChargesService {
       where: { id: chargeId },
       data: {
         status: 'CANCELED',
+        amountDue: charge.amountDue,
         amountPaid: new Prisma.Decimal(0),
         paidAt: null,
       },
@@ -326,7 +356,7 @@ export class ChargesService {
   }
 
   async getAllUserCharges(userId: string) {
-    return this.prisma.monthlyCharge.findMany({
+    const charges = await this.prisma.monthlyCharge.findMany({
       where: {
         cashGroup: {
           ownerUserId: userId,
@@ -349,6 +379,7 @@ export class ChargesService {
             id: true,
             name: true,
             cycleYear: true,
+            defaultLoanInterestRate: true,
           },
         },
       },
@@ -363,6 +394,12 @@ export class ChargesService {
         },
       ],
     });
+
+    const syncedCharges = await Promise.all(
+      charges.map((charge) => this.synchronizeChargeFinancials(charge, charge.cashGroup)),
+    );
+
+    return syncedCharges;
   }
 
   private async assertOwnedCashGroup(userId: string, cashGroupId: string) {
@@ -436,10 +473,11 @@ export class ChargesService {
     }
   }
 
-  private async refreshChargeStatus(chargeId: string) {
+  private async refreshChargeStatus(chargeId: string, asOfDate = new Date()) {
     const charge = await this.prisma.monthlyCharge.findUnique({
       where: { id: chargeId },
       include: {
+        cashGroup: true,
         payments: {
           orderBy: {
             paidAt: 'asc',
@@ -452,6 +490,13 @@ export class ChargesService {
       throw new NotFoundException('Cobrança não encontrada');
     }
 
+    const snapshot = this.getChargeFinancialSnapshot(
+      charge,
+      charge.cashGroup,
+      asOfDate,
+      true,
+    );
+
     const totalPaid = charge.payments.reduce(
       (sum, payment) => sum + Number(payment.amountPaid),
       0,
@@ -460,22 +505,158 @@ export class ChargesService {
       ? charge.payments[charge.payments.length - 1].paidAt
       : null;
 
-    let status: 'PENDING' | 'PARTIAL' | 'PAID';
-    if (totalPaid >= Number(charge.amountDue)) {
+    await this.prisma.monthlyCharge.update({
+      where: { id: chargeId },
+      data: {
+        amountDue: new Prisma.Decimal(snapshot.amountDue),
+        amountPaid: new Prisma.Decimal(totalPaid),
+        paidAt: latestPaidAt,
+        status: snapshot.status,
+      },
+    });
+  }
+
+  private async synchronizeChargeFinancials<T extends {
+    id: string;
+    dueDate: Date;
+    baseAmount: Prisma.Decimal | number;
+    amountDue: Prisma.Decimal | number;
+    amountPaid: Prisma.Decimal | number;
+    status: string;
+    cashGroupId: string;
+  }>(
+    charge: T,
+    cashGroup: { defaultLoanInterestRate: Prisma.Decimal | number },
+  ): Promise<T> {
+    if (charge.status === 'PAID' || charge.status === 'CANCELED') {
+      return this.attachChargeFinancialMeta(charge, cashGroup);
+    }
+
+    const snapshot = this.getChargeFinancialSnapshot(charge, cashGroup);
+    const shouldPersist =
+      Number(charge.amountDue) !== snapshot.amountDue || charge.status !== snapshot.status;
+
+    if (shouldPersist) {
+      await this.prisma.monthlyCharge.update({
+        where: { id: charge.id },
+        data: {
+          amountDue: new Prisma.Decimal(snapshot.amountDue),
+          status: snapshot.status,
+        },
+      });
+    }
+
+    return this.attachChargeFinancialMeta(
+      {
+        ...charge,
+        amountDue: new Prisma.Decimal(snapshot.amountDue),
+        status: snapshot.status,
+      },
+      cashGroup,
+    );
+  }
+
+  private attachChargeFinancialMeta<T extends {
+    amountDue: Prisma.Decimal | number;
+    baseAmount: Prisma.Decimal | number;
+    dueDate: Date;
+    amountPaid: Prisma.Decimal | number;
+    status: string;
+  }>(charge: T, cashGroup: { defaultLoanInterestRate: Prisma.Decimal | number }) {
+    const snapshot = this.getChargeFinancialSnapshot(charge, cashGroup);
+
+    return {
+      ...charge,
+      amountDue: new Prisma.Decimal(snapshot.amountDue),
+      overdueMonths: snapshot.overdueMonths,
+      lateFeeAmount: new Prisma.Decimal(snapshot.lateFeeAmount),
+      monthlyLateFeeAmount: new Prisma.Decimal(snapshot.monthlyLateFeeAmount),
+      appliedInterestRate: new Prisma.Decimal(snapshot.appliedInterestRate),
+    };
+  }
+
+  private getChargeFinancialSnapshot(
+    charge: {
+      dueDate: Date;
+      baseAmount: Prisma.Decimal | number;
+      amountDue: Prisma.Decimal | number;
+      amountPaid: Prisma.Decimal | number;
+      status: string;
+    },
+    cashGroup: { defaultLoanInterestRate: Prisma.Decimal | number },
+    asOfDate = new Date(),
+    settleAtAsOfDate = false,
+  ) {
+    const baseAmount = Number(charge.baseAmount);
+    const amountPaid = Number(charge.amountPaid);
+    const appliedInterestRate = Number(cashGroup.defaultLoanInterestRate);
+    const overdueMonths = this.getOverdueMonths(charge.dueDate, asOfDate);
+    const monthlyLateFeeAmount = Number(
+      (baseAmount * (appliedInterestRate / 100)).toFixed(2),
+    );
+    const lateFeeAmount = Number((monthlyLateFeeAmount * overdueMonths).toFixed(2));
+    const amountDue = Number((baseAmount + lateFeeAmount).toFixed(2));
+
+    let status: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
+
+    if (settleAtAsOfDate && amountPaid >= amountDue) {
       status = 'PAID';
-    } else if (totalPaid > 0) {
+    } else if (amountPaid >= Number(charge.amountDue) && charge.status === 'PAID') {
+      status = 'PAID';
+    } else if (amountPaid > 0) {
       status = 'PARTIAL';
+    } else if (overdueMonths > 0) {
+      status = 'OVERDUE';
     } else {
       status = 'PENDING';
     }
 
-    await this.prisma.monthlyCharge.update({
-      where: { id: chargeId },
-      data: {
-        amountPaid: new Prisma.Decimal(totalPaid),
-        paidAt: latestPaidAt,
-        status,
-      },
-    });
+    return {
+      amountDue,
+      overdueMonths,
+      lateFeeAmount,
+      monthlyLateFeeAmount,
+      appliedInterestRate,
+      status,
+    };
+  }
+
+  private isPastDue(dueDate: Date) {
+    const dueUtc = Date.UTC(
+      dueDate.getUTCFullYear(),
+      dueDate.getUTCMonth(),
+      dueDate.getUTCDate(),
+    );
+    const now = new Date();
+    const todayUtc = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+    );
+
+    return todayUtc > dueUtc;
+  }
+
+  private getOverdueMonths(dueDate: Date, asOfDate: Date) {
+    const dueUtc = Date.UTC(
+      dueDate.getUTCFullYear(),
+      dueDate.getUTCMonth(),
+      dueDate.getUTCDate(),
+    );
+    const asOfUtc = Date.UTC(
+      asOfDate.getUTCFullYear(),
+      asOfDate.getUTCMonth(),
+      asOfDate.getUTCDate(),
+    );
+
+    if (asOfUtc <= dueUtc) {
+      return 0;
+    }
+
+    return (
+      (asOfDate.getUTCFullYear() - dueDate.getUTCFullYear()) * 12 +
+      (asOfDate.getUTCMonth() - dueDate.getUTCMonth()) +
+      1
+    );
   }
 }

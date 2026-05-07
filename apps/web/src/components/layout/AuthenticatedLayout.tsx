@@ -14,6 +14,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     { to: '/caixinhas', label: 'Caixinhas' },
     { to: '/cotistas', label: 'Cotistas' },
     { to: '/cobrancas', label: 'Cobranças' },
+    { to: '/emprestimos', label: 'Empréstimos' },
   ];
 
   return (

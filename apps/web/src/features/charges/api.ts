@@ -28,13 +28,16 @@ export const chargesApi = {
 
   listCharges: async (
     cashGroupId: string,
-    referenceMonth: number,
-    referenceYear: number,
+    referenceMonth?: number,
+    referenceYear?: number,
   ): Promise<ChargesListResponse> => {
     const response = await apiClient.get(
       `/cash-groups/${cashGroupId}/charges`,
       {
-        params: { referenceMonth, referenceYear },
+        params: {
+          ...(referenceMonth ? { referenceMonth } : {}),
+          ...(referenceYear ? { referenceYear } : {}),
+        },
       },
     );
     return response.data;

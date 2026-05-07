@@ -47,6 +47,24 @@ enum PaymentMethod {
   PIX
 }
 
+enum LoanStatus {
+  OPEN
+  PARTIAL
+  PAID
+  CANCELED
+}
+
+enum LoanPaymentMethod {
+  PIX
+  CASH
+  OTHER
+}
+
+enum LoanPaymentStatus {
+  CONFIRMED
+  CANCELED
+}
+
 model User {
   id           String     @id @default(cuid())
   name         String
@@ -80,6 +98,7 @@ model CashGroup {
   members                 Member[]
   monthlyCharges          MonthlyCharge[]
   chargePayments          ChargePayment[]
+  loans                   Loan[]
 
   @@index([ownerUserId])
   @@map("cash_groups")
@@ -99,6 +118,7 @@ model Member {
   cashGroup    CashGroup    @relation(fields: [cashGroupId], references: [id])
   monthlyCharges MonthlyCharge[]
   chargePayments ChargePayment[]
+  loans         Loan[]
 
   @@index([cashGroupId])
   @@map("members")
@@ -111,6 +131,7 @@ model MonthlyCharge {
   referenceMonth  Int                 @map("reference_month")
   referenceYear   Int                 @map("reference_year")
   quotasCount     Int                 @map("quotas_count")
+  baseAmount      Decimal             @map("base_amount") @db.Decimal(10, 2)
   amountDue       Decimal             @map("amount_due") @db.Decimal(10, 2)
   amountPaid      Decimal             @default(0) @map("amount_paid") @db.Decimal(10, 2)
   dueDate         DateTime            @map("due_date")
@@ -165,4 +186,47 @@ model PaymentReceipt {
   payment     ChargePayment @relation(fields: [paymentId], references: [id])
 
   @@map("payment_receipts")
+}
+
+model Loan {
+  id              String     @id @default(cuid())
+  cashGroupId     String     @map("cash_group_id")
+  memberId        String     @map("member_id")
+  principalAmount Decimal    @map("principal_amount") @db.Decimal(10, 2)
+  interestRate    Decimal    @map("interest_rate") @db.Decimal(5, 2)
+  totalDue        Decimal    @map("total_due") @db.Decimal(10, 2)
+  amountPaid      Decimal    @default(0) @map("amount_paid") @db.Decimal(10, 2)
+  grantedAt       DateTime   @map("granted_at")
+  dueDate         DateTime?  @map("due_date")
+  paidAt          DateTime?  @map("paid_at")
+  status          LoanStatus @default(OPEN)
+  notes           String?
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  cashGroup       CashGroup     @relation(fields: [cashGroupId], references: [id])
+  member          Member        @relation(fields: [memberId], references: [id])
+  payments        LoanPayment[]
+
+  @@index([cashGroupId])
+  @@index([memberId])
+  @@map("loans")
+}
+
+model LoanPayment {
+  id           String            @id @default(cuid())
+  loanId        String            @map("loan_id")
+  amount        Decimal           @db.Decimal(10, 2)
+  method        LoanPaymentMethod @default(PIX)
+  status        LoanPaymentStatus @default(CONFIRMED)
+  paidAt        DateTime          @map("paid_at")
+  notes         String?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  loan          Loan              @relation(fields: [loanId], references: [id])
+
+  @@index([loanId])
+  @@index([paidAt])
+  @@map("loan_payments")
 }

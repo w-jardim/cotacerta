@@ -67,24 +67,26 @@
 
 ✅ Status: Concluída
 
-## Fase 7 — Quem deve
-
-- dashboard
-- pendências
-- WhatsApp
-
-## Fase 8 — Painel do cotista
-
-- convite
-- acesso
-- visualização
-
-## Fase 9 — Empréstimos
+## Fase 7 — Empréstimos
 
 - criar empréstimo
 - juros
 - pagamentos
 - saldo devedor
+
+✅ Status: Concluída
+
+## Fase 8 — Quem deve
+
+- dashboard
+- pendências
+- WhatsApp
+
+## Fase 9 — Painel do cotista
+
+- convite
+- acesso
+- visualização
 
 ## Fase 10 — Fechamento anual
 

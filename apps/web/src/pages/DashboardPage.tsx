@@ -10,6 +10,7 @@ import { useAuth } from '../features/auth/auth-context';
 import { cashGroupsApi } from '../features/cash-groups/api';
 import { membersApi } from '../features/members/api';
 import { chargesApi } from '../features/charges/api';
+import { loansApi } from '../features/loans/api';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -17,18 +18,23 @@ export function DashboardPage() {
   const [cashGroupsCount, setCashGroupsCount] = useState(0);
   const [membersCount, setMembersCount] = useState(0);
   const [chargesCount, setChargesCount] = useState(0);
+  const [openLoansCount, setOpenLoansCount] = useState(0);
 
   useEffect(() => {
     async function loadStats() {
       try {
-        const [cashGroups, members, charges] = await Promise.all([
+        const [cashGroups, members, charges, loans] = await Promise.all([
           cashGroupsApi.getAll(),
           membersApi.getAllUserMembers(),
           chargesApi.getAllUserCharges(),
+          loansApi.getAllUserLoans(),
         ]);
         setCashGroupsCount(cashGroups.length);
         setMembersCount(members.filter((member: any) => member.status === 'ACTIVE').length);
         setChargesCount(charges.length);
+        setOpenLoansCount(
+          loans.items.filter((loan) => ['OPEN', 'PARTIAL'].includes(loan.status)).length,
+        );
       } catch (err) {
         console.error('Erro ao carregar estatísticas', err);
       }
@@ -65,7 +71,8 @@ export function DashboardPage() {
     {
       name: 'Empréstimos',
       description: 'Gestão de saldo devedor e cálculo de juros por cotista.',
-      status: 'Em breve',
+      status: 'Disponível',
+      path: '/emprestimos',
     },
     {
       name: 'Fechamento anual',
@@ -108,6 +115,16 @@ export function DashboardPage() {
             value={chargesCount}
             label="Cobranças listadas"
             footnote="Pendências e lançamentos recentes"
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-1">
+          <StatCard
+            tone="danger"
+            icon={<span className="text-lg font-bold text-rose-700">EP</span>}
+            value={openLoansCount}
+            label="Empréstimos em aberto"
+            footnote="Operações com saldo pendente ou parcial"
           />
         </div>
 

@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { CashGroupsModule } from './cash-groups/cash-groups.module';
 import { MembersModule } from './members/members.module';
 import { ChargesModule } from './charges/charges.module';
+import { LoansModule } from './loans/loans.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ChargesModule } from './charges/charges.module';
     CashGroupsModule,
     MembersModule,
     ChargesModule,
+    LoansModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -106,4 +106,56 @@ body {
   .cc-section-head {
     @apply flex flex-col gap-4 md:flex-row md:items-end md:justify-between;
   }
+
+  .cc-action-strip {
+    @apply rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4;
+  }
+
+  .cc-action-grid {
+    @apply grid gap-2 sm:grid-cols-2;
+  }
+
+  .cc-inline-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .cc-group-card {
+    @apply relative overflow-hidden rounded-[30px] border bg-white/95 p-6 shadow-sm backdrop-blur-sm;
+    border-color: rgba(148, 163, 184, 0.18);
+    box-shadow:
+      0 26px 60px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .cc-group-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 132px;
+    background:
+      radial-gradient(circle at top left, rgba(20, 184, 166, 0.15), transparent 54%),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+    pointer-events: none;
+  }
+
+  .cc-metric-grid {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .cc-metric-card {
+    @apply rounded-2xl border border-white/80 bg-white/85 px-4 py-3 shadow-sm;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .cc-metric-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500;
+  }
+
+  .cc-metric-value {
+    @apply mt-2 text-sm font-bold text-slate-900;
+  }
+
+  .cc-subtle-link {
+    @apply inline-flex items-center rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
+  }
 }

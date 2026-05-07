@@ -13,8 +13,13 @@ export interface MonthlyCharge {
   referenceMonth: number;
   referenceYear: number;
   dueDate: string;
+  baseAmount: string;
   amountDue: string;
   amountPaid: string;
+  overdueMonths?: number;
+  lateFeeAmount?: string;
+  monthlyLateFeeAmount?: string;
+  appliedInterestRate?: string;
   status: MonthlyChargeStatus;
   paidAt: string | null;
   createdAt: string;
@@ -29,6 +34,7 @@ export interface MonthlyCharge {
     id: string;
     name: string;
     cycleYear: number;
+    defaultLoanInterestRate?: string;
   };
 }
 

@@ -7,6 +7,8 @@ import { MembersPage } from '../pages/MembersPage';
 import { MembersListPage } from '../pages/MembersListPage';
 import { ChargesPage } from '../pages/ChargesPage';
 import { ChargesListPage } from '../pages/ChargesListPage';
+import { LoansPage } from '../pages/LoansPage';
+import { LoansListPage } from '../pages/LoansListPage';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '../features/auth/PublicOnlyRoute';
 
@@ -69,6 +71,15 @@ export function AppRoutes() {
         />
 
         <Route
+          path="/emprestimos"
+          element={
+            <ProtectedRoute>
+              <LoansListPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/caixinhas/:cashGroupId/cotistas"
           element={
             <ProtectedRoute>
@@ -82,6 +93,15 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <ChargesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/caixinhas/:cashGroupId/emprestimos"
+          element={
+            <ProtectedRoute>
+              <LoansPage />
             </ProtectedRoute>
           }
         />

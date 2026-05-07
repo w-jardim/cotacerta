@@ -34,8 +34,10 @@ export function ChargesPage() {
   const [error, setError] = useState('');
 
   const currentDate = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState('all');
+  const [selectedYear, setSelectedYear] = useState('all');
+  const [generateMonth, setGenerateMonth] = useState(`${currentDate.getMonth() + 1}`);
+  const [generateYear, setGenerateYear] = useState(`${currentDate.getFullYear()}`);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCharge, setSelectedCharge] = useState<MonthlyCharge | null>(null);
@@ -79,7 +81,11 @@ export function ChargesPage() {
     try {
       setLoading(true);
       setError('');
-      const data = await chargesApi.listCharges(id!, selectedMonth, selectedYear);
+      const data = await chargesApi.listCharges(
+        id!,
+        selectedMonth === 'all' ? undefined : parseInt(selectedMonth, 10),
+        selectedYear === 'all' ? undefined : parseInt(selectedYear, 10),
+      );
       setCharges(data.charges);
       setSummary(data.summary);
     } catch (err: any) {
@@ -113,8 +119,8 @@ export function ChargesPage() {
       setLoading(true);
       setError('');
       await chargesApi.generateCharges(id!, {
-        referenceMonth: selectedMonth,
-        referenceYear: selectedYear,
+        referenceMonth: parseInt(generateMonth, 10),
+        referenceYear: parseInt(generateYear, 10),
       });
       setShowGenerateModal(false);
       await loadCharges();
@@ -229,7 +235,18 @@ export function ChargesPage() {
   const formatCurrency = (value: string) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value));
 
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR');
+  const formatDate = (dateString: string) =>
+    new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(dateString));
+
+  const lateRate = cashGroup ? parseFloat(cashGroup.defaultLoanInterestRate) : 0;
+  const hasLateFee = chargeDetails
+    ? parseFloat(chargeDetails.amountDue) > parseFloat(chargeDetails.baseAmount)
+    : false;
+  const lateFeeAmount = chargeDetails ? parseFloat(chargeDetails.lateFeeAmount || '0') : 0;
+  const monthlyLateFeeAmount = chargeDetails
+    ? parseFloat(chargeDetails.monthlyLateFeeAmount || '0')
+    : 0;
+  const overdueMonths = chargeDetails?.overdueMonths || 0;
 
   const remainingAmount = chargeDetails
     ? Math.max(0, parseFloat(chargeDetails.amountDue) - parseFloat(chargeDetails.amountPaid))
@@ -243,17 +260,30 @@ export function ChargesPage() {
             backTo="/caixinhas"
             backLabel="Voltar para caixinhas"
             title={`Cobranças${cashGroup ? ` • ${cashGroup.name}` : ''}`}
-            subtitle="Gere o mês, registre Pix recebidos com comprovante e acompanhe o histórico de pagamentos de cada cobrança."
+            subtitle="Veja a situação geral da caixinha, filtre por período quando quiser e acompanhe pagamentos, comprovantes e atrasos."
           />
         </div>
 
         <Card className="p-6">
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+          <div className="cc-section-head">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">Visão geral da caixinha</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Use os filtros para focar em um mês específico ou acompanhe todas as cobranças do ciclo.
+              </p>
+            </div>
+            <Button onClick={() => setShowGenerateModal(true)} disabled={loading} className="w-full md:w-auto">
+              Gerar cobranças
+            </Button>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
             <Select
-              label="Mês"
+              label="Filtrar por mês"
               value={selectedMonth}
-              onChange={(event) => setSelectedMonth(parseInt(event.target.value, 10))}
+              onChange={(event) => setSelectedMonth(event.target.value)}
             >
+              <option value="all">Todos os meses</option>
               {months.map((month, index) => (
                 <option key={month} value={index + 1}>
                   {month}
@@ -262,22 +292,17 @@ export function ChargesPage() {
             </Select>
 
             <Select
-              label="Ano"
+              label="Filtrar por ano"
               value={selectedYear}
-              onChange={(event) => setSelectedYear(parseInt(event.target.value, 10))}
+              onChange={(event) => setSelectedYear(event.target.value)}
             >
+              <option value="all">Todos os anos</option>
               {years.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
               ))}
             </Select>
-
-            <div className="flex items-end">
-              <Button onClick={() => setShowGenerateModal(true)} disabled={loading} className="w-full md:w-auto">
-                Gerar cobranças
-              </Button>
-            </div>
           </div>
         </Card>
 
@@ -312,6 +337,7 @@ export function ChargesPage() {
               <thead>
                 <tr>
                   <th className="cc-th">Cotista</th>
+                  <th className="cc-th">Período</th>
                   <th className="cc-th">Cotas</th>
                   <th className="cc-th">Vencimento</th>
                   <th className="cc-th">Valor devido</th>
@@ -329,9 +355,19 @@ export function ChargesPage() {
                         <div className="mt-1 text-xs text-slate-500">{charge.member.phone}</div>
                       )}
                     </td>
+                    <td className="cc-td">
+                      {months[charge.referenceMonth - 1]}/{charge.referenceYear}
+                    </td>
                     <td className="cc-td">{charge.quotasCount}</td>
                     <td className="cc-td">{formatDate(charge.dueDate)}</td>
-                    <td className="cc-td font-semibold text-slate-900">{formatCurrency(charge.amountDue)}</td>
+                    <td className="cc-td">
+                      <div className="font-semibold text-slate-900">{formatCurrency(charge.amountDue)}</div>
+                      {parseFloat(charge.amountDue) > parseFloat(charge.baseAmount) && (
+                        <div className="mt-1 text-xs text-amber-700">
+                          Base: {formatCurrency(charge.baseAmount)}
+                        </div>
+                      )}
+                    </td>
                     <td className="cc-td">{formatCurrency(charge.amountPaid)}</td>
                     <td className="cc-td">{getStatusBadge(charge.status)}</td>
                     <td className="cc-td">
@@ -360,9 +396,32 @@ export function ChargesPage() {
         >
           <div className="space-y-4">
             <p className="text-sm leading-6 text-slate-700">
-              Deseja gerar as cobranças para <strong>{months[selectedMonth - 1]}</strong> de{' '}
-              <strong>{selectedYear}</strong>?
+              Escolha o período para gerar as cobranças desta caixinha.
             </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Select
+                label="Mês da geração"
+                value={generateMonth}
+                onChange={(event) => setGenerateMonth(event.target.value)}
+              >
+                {months.map((month, index) => (
+                  <option key={month} value={index + 1}>
+                    {month}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label="Ano da geração"
+                value={generateYear}
+                onChange={(event) => setGenerateYear(event.target.value)}
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <p className="text-sm leading-6 text-slate-500">
               O sistema criará cobranças para os cotistas ativos da caixinha selecionada.
             </p>
@@ -393,6 +452,10 @@ export function ChargesPage() {
               <>
                 <div className="grid gap-4 md:grid-cols-4">
                   <Card variant="subtle" className="p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Base</p>
+                    <p className="mt-2 text-lg font-bold text-slate-950">{formatCurrency(chargeDetails.baseAmount)}</p>
+                  </Card>
+                  <Card variant="subtle" className="p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Devido</p>
                     <p className="mt-2 text-lg font-bold text-slate-950">{formatCurrency(chargeDetails.amountDue)}</p>
                   </Card>
@@ -412,11 +475,25 @@ export function ChargesPage() {
                   </Card>
                 </div>
 
+                {hasLateFee && (
+                  <Alert variant="info">
+                    Vencimento encerrado em {formatDate(chargeDetails.dueDate)}. Foi aplicado acréscimo de{' '}
+                    <strong>{lateRate.toFixed(2)}%</strong>, adicionando{' '}
+                    <strong>
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lateFeeAmount)}
+                    </strong>{' '}
+                    ao valor original da cobrança em <strong>{overdueMonths} mês(es)</strong> de atraso.
+                  </Alert>
+                )}
+
                 <Card className="p-5">
                   <div className="mb-4">
                     <h3 className="text-lg font-bold text-slate-950">Registrar novo pagamento</h3>
                     <p className="mt-1 text-sm text-slate-600">
                       Cotista: <strong>{chargeDetails.member?.name}</strong>
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Vencimento da cobrança: <strong>{formatDate(chargeDetails.dueDate)}</strong>
                     </p>
                   </div>
 
@@ -448,6 +525,39 @@ export function ChargesPage() {
                       <Select label="Método de pagamento" value="PIX" disabled>
                         <option value="PIX">Pix</option>
                       </Select>
+
+                      <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Valor original</span>
+                          <strong>{formatCurrency(chargeDetails.baseAmount)}</strong>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <span>Acréscimo mensal</span>
+                          <strong>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(monthlyLateFeeAmount)}
+                          </strong>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <span>Meses em atraso</span>
+                          <strong>{overdueMonths}</strong>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <span>Total de acréscimos</span>
+                          <strong>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lateFeeAmount)}
+                          </strong>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <span>Valor atualizado</span>
+                          <strong>{formatCurrency(chargeDetails.amountDue)}</strong>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <span>Saldo pendente</span>
+                          <strong>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(remainingAmount)}
+                          </strong>
+                        </div>
+                      </div>
 
                       <div>
                         <label className="mb-2 block text-sm font-semibold text-slate-700">

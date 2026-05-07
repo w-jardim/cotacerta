@@ -5,7 +5,7 @@ interface StatCardProps {
   value: ReactNode;
   label: string;
   footnote?: ReactNode;
-  tone?: 'neutral' | 'brand' | 'success' | 'warning';
+  tone?: 'neutral' | 'brand' | 'success' | 'warning' | 'danger';
 }
 
 export function StatCard({ icon, value, label, footnote, tone = 'neutral' }: StatCardProps) {
@@ -14,6 +14,7 @@ export function StatCard({ icon, value, label, footnote, tone = 'neutral' }: Sta
     brand: 'bg-gradient-to-br from-teal-50 via-white to-cyan-50',
     success: 'bg-gradient-to-br from-emerald-50 via-white to-teal-50',
     warning: 'bg-gradient-to-br from-amber-50 via-white to-orange-50',
+    danger: 'bg-gradient-to-br from-rose-50 via-white to-orange-50',
   };
 
   return (

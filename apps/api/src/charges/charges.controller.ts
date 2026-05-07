@@ -8,7 +8,6 @@ import {
   Query,
   UseGuards,
   Request,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ChargesService } from './charges.service';
 import { GenerateChargesDto } from './dto/generate-charges.dto';
@@ -45,14 +44,14 @@ export class ChargesController {
   findAll(
     @Request() req,
     @Param('cashGroupId') cashGroupId: string,
-    @Query('referenceMonth', ParseIntPipe) referenceMonth: number,
-    @Query('referenceYear', ParseIntPipe) referenceYear: number,
+    @Query('referenceMonth') referenceMonth?: string,
+    @Query('referenceYear') referenceYear?: string,
   ) {
     return this.chargesService.findAll(
       req.user.id,
       cashGroupId,
-      referenceMonth,
-      referenceYear,
+      referenceMonth ? parseInt(referenceMonth, 10) : undefined,
+      referenceYear ? parseInt(referenceYear, 10) : undefined,
     );
   }
 
@@ -60,14 +59,14 @@ export class ChargesController {
   findDebtors(
     @Request() req,
     @Param('cashGroupId') cashGroupId: string,
-    @Query('referenceMonth', ParseIntPipe) referenceMonth: number,
-    @Query('referenceYear', ParseIntPipe) referenceYear: number,
+    @Query('referenceMonth') referenceMonth: string,
+    @Query('referenceYear') referenceYear: string,
   ) {
     return this.chargesService.findDebtors(
       req.user.id,
       cashGroupId,
-      referenceMonth,
-      referenceYear,
+      parseInt(referenceMonth, 10),
+      parseInt(referenceYear, 10),
     );
   }
 
