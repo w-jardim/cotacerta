@@ -268,3 +268,81 @@ Validações:
 - ✅ Cancelamento lógico de pagamento do empréstimo implementado
 - ✅ Visão global do módulo disponível no dashboard
 - ✅ Página da caixinha com resumo, lista, histórico e recebimentos
+
+✅ Status: Validada
+
+## Fase 8 — Quem Deve
+
+Validações:
+
+- ✅ Módulo `debtors` criado e integrado ao AppModule
+- ✅ GET /debtors endpoint funcionando
+- ✅ GET /cash-groups/:id/debtors endpoint funcionando
+- ✅ GET /cash-groups/:id/debtors/:memberId/message endpoint funcionando
+- ✅ Consolidação de cobranças pendentes (PENDING, PARTIAL, OVERDUE)
+- ✅ Consolidação de empréstimos pendentes (OPEN, PARTIAL)
+- ✅ Separação entre dívida de cotas e dívida de empréstimos
+- ✅ Total pendente calculado no backend
+- ✅ Usuário só acessa dados das próprias caixinhas
+- ✅ Mensagem de cobrança gerada com formatação WhatsApp
+- ✅ Link WhatsApp funcional (wa.me) gerado
+- ✅ Sem telefone retorna whatsappUrl null
+- ✅ Filtro por caixinha funciona
+- ✅ Filtro por mês/ano funciona
+- ✅ Frontend: página /quem-deve criada
+- ✅ Frontend: cards de resumo exibindo estatísticas
+- ✅ Frontend: lista de devedores com separação
+- ✅ Frontend: botão "Copiar mensagem" funcional
+- ✅ Frontend: botão "Cobrar no WhatsApp" funcional
+- ✅ Frontend: botão desabilitado quando sem telefone
+- ✅ Frontend: links para cobranças e empréstimos
+- ✅ Frontend: estado vazio quando ninguém deve
+- ✅ Frontend: filtros de caixinha, mês e ano
+- ✅ Endpoint sem token retorna 401 Unauthorized
+- ✅ Cobranças PAID e CANCELED não entram como dívida
+- ✅ Empréstimos PAID e CANCELED não entram como dívida
+- ✅ Build API passou
+- ✅ Build Web passou
+- ✅ Containers healthy após rebuild
+- ✅ API pública continua OK
+- ✅ Web pública continua OK
+- ✅ Nenhuma nova movimentação financeira criada
+- ✅ Nenhum fechamento anual implementado
+- ✅ Nenhuma integração WhatsApp API oficial implementada
+- ✅ Nenhum OCR/IA implementado
+
+✅ Status: Validada
+
+Comandos de validação:
+```bash
+# Login e teste de endpoints
+LOGIN_RESPONSE=$(curl -s -X POST https://api.cotacerta.gardenwjs.tech/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@cotacerta.com","password":"admin123456"}')
+
+TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.accessToken')
+
+# Listar todos os devedores
+curl -s "https://api.cotacerta.gardenwjs.tech/debtors" \
+  -H "Authorization: Bearer $TOKEN" | jq '.summary'
+
+# Listar devedores de uma caixinha específica
+curl -s "https://api.cotacerta.gardenwjs.tech/cash-groups/CASH_GROUP_ID/debtors?referenceMonth=5&referenceYear=2026" \
+  -H "Authorization: Bearer $TOKEN" | jq '.summary'
+
+# Gerar mensagem de cobrança
+curl -s "https://api.cotacerta.gardenwjs.tech/cash-groups/CASH_GROUP_ID/debtors/MEMBER_ID/message?referenceMonth=5&referenceYear=2026" \
+  -H "Authorization: Bearer $TOKEN" | jq '.message'
+
+# Sem token (deve retornar 401)
+curl -i "https://api.cotacerta.gardenwjs.tech/debtors"
+
+# Containers healthy
+docker compose ps
+
+# Health checks
+curl -s https://api.cotacerta.gardenwjs.tech/health
+curl -I https://cotacerta.gardenwjs.tech
+```
+
+## Fase 9 — Painel do cotista

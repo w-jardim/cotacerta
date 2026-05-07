@@ -82,6 +82,8 @@
 - pendências
 - WhatsApp
 
+✅ Status: Concluída
+
 ## Fase 9 — Painel do cotista
 
 - convite

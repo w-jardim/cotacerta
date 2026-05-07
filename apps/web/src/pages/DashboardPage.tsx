@@ -75,6 +75,12 @@ export function DashboardPage() {
       path: '/emprestimos',
     },
     {
+      name: 'Quem Deve',
+      description: 'Visão consolidada de pendências, cobrança por WhatsApp e filtro por período.',
+      status: 'Disponível',
+      path: '/quem-deve',
+    },
+    {
       name: 'Fechamento anual',
       description: 'Apuração final por cota com visibilidade do resultado.',
       status: 'Em breve',

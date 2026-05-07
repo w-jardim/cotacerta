@@ -9,6 +9,7 @@ import { ChargesPage } from '../pages/ChargesPage';
 import { ChargesListPage } from '../pages/ChargesListPage';
 import { LoansPage } from '../pages/LoansPage';
 import { LoansListPage } from '../pages/LoansListPage';
+import { DebtorsPage } from '../pages/DebtorsPage';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '../features/auth/PublicOnlyRoute';
 
@@ -75,6 +76,15 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <LoansListPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/quem-deve"
+          element={
+            <ProtectedRoute>
+              <DebtorsPage />
             </ProtectedRoute>
           }
         />

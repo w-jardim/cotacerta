@@ -8,6 +8,7 @@ import { CashGroupsModule } from './cash-groups/cash-groups.module';
 import { MembersModule } from './members/members.module';
 import { ChargesModule } from './charges/charges.module';
 import { LoansModule } from './loans/loans.module';
+import { DebtorsModule } from './debtors/debtors.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { LoansModule } from './loans/loans.module';
     MembersModule,
     ChargesModule,
     LoansModule,
+    DebtorsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
