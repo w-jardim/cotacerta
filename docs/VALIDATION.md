@@ -429,3 +429,76 @@ curl -X PATCH https://api.cotacerta.gardenwjs.tech/cash-groups/$GROUP_ID/members
   -H "Authorization: Bearer $TOKEN"
 ```
 
+
+## Fase 10 — Fechamento anual / Rateio por cotas
+
+Validações:
+
+- ✅ Modelos `AnnualClosing` e `AnnualClosingMemberResult` adicionados ao schema
+- ✅ Migration `20260510000000_add_annual_closing` aplicada em produção
+- ✅ POST `/cash-groups/:groupId/annual-closings/simulate` retorna rateio sem salvar
+- ✅ POST `/cash-groups/:groupId/annual-closings` salva simulação
+- ✅ PATCH `.../annual-closings/:id/confirm` confirma fechamento
+- ✅ PATCH `.../annual-closings/:id/cancel` cancela fechamento
+- ✅ Fechamento confirmado duplicado bloqueado (400)
+- ✅ Simulação não altera dados financeiros
+- ✅ Rateio por cota calculado no backend (`valuePerQuota = totalAvailable / totalQuotas`)
+- ✅ Pendências descontadas por cotista (`netAmount = max(0, gross - totalDebt)`)
+- ✅ Todas as rotas protegidas por `JwtAuthGuard + RolesGuard` (`GESTOR_MASTER / ADMIN_PLATFORM`)
+- ✅ Cotista em rota de fechamento recebe 403
+- ✅ Frontend: página `/caixinhas/:id/fechamento` com simulação, cartões e tabela por cotista
+- ✅ Frontend: botão confirmar com modal de confirmação
+- ✅ Dashboard: card "Fechamento anual" atualizado para "Disponível"
+- ✅ Build API passou
+- ✅ Build Web passou
+- ✅ Containers healthy após rebuild
+
+✅ Status: Validada
+
+## Fase 11 — Auditoria, Segurança e Qualidade do MVP
+
+Auditoria realizada:
+
+**Segurança / Auth**
+- ✅ Sem token → 401 (verificado via curl)
+- ✅ Token inválido → 401 (verificado via curl)
+- ✅ COTISTA em `/cash-groups` → 403
+- ✅ COTISTA em `/debtors` → 403
+- ✅ GESTOR_MASTER em `/member-portal/me` → 403
+- ✅ `passwordHash` nunca exposto nas respostas (sanitizeUser em auth.service.ts)
+- ✅ Senha provisória armazenada apenas como bcrypt hash
+- ✅ Upload de comprovante valida MIME type (jpg, png, webp, pdf) e formato base64
+- ✅ Erros previsíveis retornam 4xx (BadRequest, Conflict, Forbidden, NotFound)
+
+**Isolamento por gestor**
+- ✅ `assertOwnedCashGroup` presente em: cash-groups, charges, loans, debtors, annual-closings
+- ✅ `assertGestorOwnsMember` presente em: member-access
+- ✅ Gestor só vê caixinhas com `ownerUserId === userId`
+
+**Isolamento por cotista**
+- ✅ `getMemberByUserId` em member-portal.service busca por `userId` único
+- ✅ Cotista acessa apenas dados do próprio Member (charges, loans, debts, payments)
+
+**Cálculos financeiros**
+- ✅ `amountDue` calculado pelo backend (quotaValue × quotasCount + juros)
+- ✅ Cobrança duplicada bloqueada por unique constraint no Prisma
+- ✅ Pagamento de cobrança cancelada bloqueado (ConflictException)
+- ✅ Pagamento de empréstimo cancelado bloqueado (ConflictException)
+- ✅ Loans filtram apenas pagamentos `CONFIRMED` no cálculo do `amountPaid`
+- ✅ Rateio anual: `valuePerQuota = totalAvailable / totalQuotas`
+
+**UX corrigida**
+- ✅ `MemberPortalLayout`: links mortos removidos (`/meu-painel/cobrancas` etc.)
+- ✅ `LoginPage`: redirect por role após login (COTISTA → `/meu-painel`, outros → `/dashboard`)
+- ✅ Logout presente em ambos os layouts (gestor e cotista)
+- ✅ Loading spinners em todas as páginas protegidas
+- ✅ Mensagens de erro em português em todas as páginas
+- ✅ Valores monetários com formato R$ nas telas críticas
+- ✅ Datas no formato brasileiro (toLocaleDateString('pt-BR'))
+
+**Documentação**
+- ✅ `docs/HOMOLOGACAO.md` criado com checklist para validação com usuário real
+- ✅ `docs/ROADMAP.md` atualizado (Fase 10 e Fase 11 marcadas como concluídas)
+- ✅ `docs/VALIDATION.md` atualizado
+
+✅ Status: Validada

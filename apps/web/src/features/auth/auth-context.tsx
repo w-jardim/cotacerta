@@ -8,7 +8,7 @@ interface AuthContextData {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<User>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
 }
@@ -41,10 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-  async function login(credentials: LoginCredentials) {
+  async function login(credentials: LoginCredentials): Promise<User> {
     const { accessToken, user: userData } = await authApi.login(credentials);
     authStorage.setToken(accessToken);
     setUser(userData);
+    return userData;
   }
 
   async function register(data: RegisterData) {

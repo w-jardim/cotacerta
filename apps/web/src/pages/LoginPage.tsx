@@ -23,8 +23,12 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
-      navigate('/dashboard');
+      const userData = await login({ email, password });
+      if (userData.role === 'COTISTA') {
+        navigate('/meu-painel');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(
         err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.'

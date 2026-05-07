@@ -12,10 +12,6 @@ export function MemberPortalLayout({ children }: MemberPortalLayoutProps) {
 
   const links = [
     { to: '/meu-painel', label: 'Meu Painel', end: true },
-    { to: '/meu-painel/cobrancas', label: 'Cobranças' },
-    { to: '/meu-painel/pagamentos', label: 'Pagamentos' },
-    { to: '/meu-painel/emprestimos', label: 'Empréstimos' },
-    { to: '/meu-painel/pendencias', label: 'Pendências' },
   ];
 
   return (

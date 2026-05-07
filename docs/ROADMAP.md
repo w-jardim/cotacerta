@@ -103,8 +103,15 @@
 - rateio
 - relatório
 
-## Fase 11 — Comprovante inteligente
+✅ Status: Concluída
 
-- OCR/IA
-- sugestão automática
-- conferência assistida
+## Fase 11 — Auditoria e qualidade do MVP
+
+- auditoria de segurança e rotas
+- isolamento por gestor/cotista validado
+- cálculos financeiros revisados
+- UX: links mortos removidos, redirect por role
+- docs/HOMOLOGACAO.md criado
+- build, deploy e testes validados
+
+✅ Status: Concluída
