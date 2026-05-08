@@ -150,7 +150,7 @@ export function AnnualClosingPage() {
         {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
         {/* Controles */}
-        <Card>
+        <Card className="p-6">
           <div className="space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-500">
               Simular Fechamento
@@ -178,15 +178,15 @@ export function AnnualClosingPage() {
 
         {/* Fechamentos salvos */}
         {savedClosings.length > 0 && (
-          <Card>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-slate-500">
+          <Card className="overflow-hidden">
+            <h2 className="px-6 pt-5 pb-2 text-sm font-semibold uppercase tracking-widest text-slate-500">
               Fechamentos salvos
             </h2>
             <div className="divide-y divide-slate-100">
               {savedClosings.map((c) => (
                 <div
                   key={c.id}
-                  className="flex cursor-pointer items-center justify-between py-3 hover:bg-slate-50"
+                  className="flex cursor-pointer items-center justify-between px-6 py-3 hover:bg-slate-50"
                   onClick={() => loadSavedClosing(c)}
                 >
                   <div className="flex items-center gap-3">
@@ -222,57 +222,54 @@ export function AnnualClosingPage() {
             </div>
 
             {/* Cards de resumo */}
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <StatCard
-                tone="success"
-                value={BRL(displayClosing.totalQuotaReceived)}
-                label="Total recebido em cotas"
-              />
-              <StatCard
-                tone="brand"
-                value={BRL(displayClosing.totalLoanReceived)}
-                label="Total recebido em empréstimos"
-              />
-              <StatCard
-                tone="brand"
-                value={BRL(displayClosing.totalAvailable)}
-                label="Total disponível"
-              />
-              <StatCard
-                tone="warning"
-                value={String(displayClosing.totalQuotas)}
-                label="Total de cotas"
-              />
-              <StatCard
-                tone="success"
-                value={BRL(displayClosing.valuePerQuota)}
-                label="Valor por cota"
-              />
-              <StatCard
-                tone="warning"
-                value={BRL(displayClosing.totalPending)}
-                label="Total de pendências"
-              />
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-xl bg-teal-600 p-6 text-white shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-widest text-teal-100">Valor por cota</p>
+                <p className="mt-2 text-3xl font-bold tracking-tight">{BRL(displayClosing.valuePerQuota)}</p>
+                <p className="mt-1 text-sm text-teal-100">{displayClosing.totalQuotas} cotas no total</p>
+              </div>
+              <div className="md:col-span-2 grid gap-4 sm:grid-cols-2">
+                <StatCard
+                  tone="success"
+                  value={BRL(displayClosing.totalAvailable)}
+                  label="Total disponível"
+                />
+                <StatCard
+                  tone="success"
+                  value={BRL(displayClosing.totalQuotaReceived)}
+                  label="Recebido em cotas"
+                />
+                <StatCard
+                  tone="brand"
+                  value={BRL(displayClosing.totalLoanReceived)}
+                  label="Recebido em empréstimos"
+                />
+                <StatCard
+                  tone="warning"
+                  value={BRL(displayClosing.totalPending)}
+                  label="Total de pendências"
+                />
+              </div>
             </div>
 
             {/* Tabela por cotista */}
             {rows.length > 0 && (
-              <Card>
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-slate-500">
+              <Card className="overflow-hidden">
+                <h2 className="px-6 pt-5 pb-4 text-sm font-semibold uppercase tracking-widest text-slate-500">
                   Resultado por cotista
                 </h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                        <th className="pb-3 pr-4">Cotista</th>
+                        <th className="pb-3 pl-6 pr-4">Cotista</th>
                         <th className="pb-3 pr-4 text-right">Cotas</th>
                         <th className="pb-3 pr-4 text-right">Valor bruto</th>
                         <th className="pb-3 pr-4 text-right">Dívida cotas</th>
                         <th className="pb-3 pr-4 text-right">Dívida emprést.</th>
                         <th className="pb-3 pr-4 text-right">Total dívidas</th>
                         <th className="pb-3 pr-4 text-right">Valor líquido</th>
-                        <th className="pb-3 text-right">Saldo devedor</th>
+                        <th className="pb-3 pr-6 text-right">Saldo devedor</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -282,14 +279,14 @@ export function AnnualClosingPage() {
                         const remaining = parseFloat(String(r.remainingDebtAmount));
                         return (
                           <tr key={r.memberId ?? i} className="hover:bg-slate-50">
-                            <td className="py-3 pr-4 font-medium text-slate-800">{name}</td>
+                            <td className="py-3 pl-6 pr-4 font-medium text-slate-800">{name}</td>
                             <td className="py-3 pr-4 text-right text-slate-600">{r.quotaQuantity}</td>
                             <td className="py-3 pr-4 text-right text-slate-700">{BRL(r.grossAmount)}</td>
                             <td className="py-3 pr-4 text-right text-amber-700">{BRL(r.quotaDebtAmount)}</td>
                             <td className="py-3 pr-4 text-right text-amber-700">{BRL(r.loanDebtAmount)}</td>
                             <td className="py-3 pr-4 text-right font-medium text-red-600">{BRL(r.totalDebtAmount)}</td>
                             <td className="py-3 pr-4 text-right font-semibold text-teal-700">{BRL(net)}</td>
-                            <td className="py-3 text-right font-semibold text-red-600">
+                            <td className="py-3 pr-6 text-right font-semibold text-red-600">
                               {remaining > 0 ? BRL(remaining) : '—'}
                             </td>
                           </tr>

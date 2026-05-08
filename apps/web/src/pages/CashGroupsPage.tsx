@@ -302,35 +302,36 @@ export function CashGroupsPage() {
                   </div>
 
                   {/* Metrics */}
-                  <div className="mx-5 grid grid-cols-3 divide-x divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/70">
-                    <div className="px-3 py-3 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cota</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">
-                        R$ {parseFloat(cashGroup.quotaValue).toFixed(2)}
-                      </p>
+                  <div className="mx-5 overflow-hidden rounded-xl border border-slate-100 bg-slate-50/70">
+                    <div className="grid grid-cols-3 divide-x divide-slate-100">
+                      <div className="px-3 py-3 text-center">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cota</p>
+                        <p className="mt-1 text-sm font-bold text-slate-800">
+                          R$ {parseFloat(cashGroup.quotaValue).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="px-3 py-3 text-center">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cotistas</p>
+                        <p className="mt-1 text-sm font-bold text-slate-800">
+                          {stats != null ? stats.count : '—'}
+                        </p>
+                      </div>
+                      <div className="px-3 py-3 text-center">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cotas</p>
+                        <p className="mt-1 text-sm font-bold text-slate-800">
+                          {stats != null ? stats.quotas : '—'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="px-3 py-3 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cotistas</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">
-                        {stats != null ? stats.count : '—'}
-                      </p>
-                    </div>
-                    <div className="px-3 py-3 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cotas</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">
-                        {stats != null ? stats.quotas : '—'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mx-5 mt-2 grid grid-cols-2 divide-x divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/70">
-                    <div className="px-3 py-3 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vencimento</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">Dia {cashGroup.dueDay}</p>
-                    </div>
-                    <div className="px-3 py-3 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Máx. cotas/cotista</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">{cashGroup.maxQuotasPerMember}</p>
+                    <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
+                      <div className="px-3 py-3 text-center">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vencimento</p>
+                        <p className="mt-1 text-sm font-bold text-slate-800">Dia {cashGroup.dueDay}</p>
+                      </div>
+                      <div className="px-3 py-3 text-center">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Máx. cotas/cotista</p>
+                        <p className="mt-1 text-sm font-bold text-slate-800">{cashGroup.maxQuotasPerMember}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -381,56 +382,84 @@ export function CashGroupsPage() {
                     </button>
                   </div>
 
-                  {/* Secondary actions */}
-                  <div className="mt-3 flex items-center gap-1 border-t border-slate-100 px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/caixinhas/${cashGroup.id}/extrato`)}
-                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                    >
-                      Extrato
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/caixinhas/${cashGroup.id}/fechamento`)}
-                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                    >
-                      Fechamento
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(cashGroup)}
-                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                    >
-                      Editar
-                    </button>
-                    {(cashGroup.status === 'ACTIVE' || cashGroup.status === 'PAUSED') && (
+                  {/* Footer actions */}
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 px-5 py-2.5">
+                    <div className="flex items-center gap-0.5">
                       <button
                         type="button"
-                        onClick={() => handleToggleStatus(cashGroup)}
-                        className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                        onClick={() => navigate(`/caixinhas/${cashGroup.id}/extrato`)}
+                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                       >
-                        {cashGroup.status === 'ACTIVE' ? 'Pausar' : 'Ativar'}
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                        Extrato
                       </button>
-                    )}
-                    {cashGroup.status !== 'ARCHIVED' && (
                       <button
                         type="button"
-                        onClick={() => handleDelete(cashGroup)}
-                        className="ml-auto rounded-md px-3 py-1.5 text-xs font-semibold text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
+                        onClick={() => navigate(`/caixinhas/${cashGroup.id}/fechamento`)}
+                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                       >
-                        Arquivar
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                        Fechamento
                       </button>
-                    )}
-                    {cashGroup.status === 'ARCHIVED' && (
+                    </div>
+                    <div className="flex items-center gap-0.5">
                       <button
                         type="button"
-                        onClick={() => handleRestore(cashGroup)}
-                        className="ml-auto rounded-md px-3 py-1.5 text-xs font-semibold text-teal-600 transition hover:bg-teal-50 hover:text-teal-800"
+                        onClick={() => openEditModal(cashGroup)}
+                        title="Editar"
+                        className="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                       >
-                        Desarquivar
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
                       </button>
-                    )}
+                      {(cashGroup.status === 'ACTIVE' || cashGroup.status === 'PAUSED') && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(cashGroup)}
+                          title={cashGroup.status === 'ACTIVE' ? 'Pausar' : 'Ativar'}
+                          className="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          {cashGroup.status === 'ACTIVE' ? (
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+                            </svg>
+                          ) : (
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
+                      {cashGroup.status !== 'ARCHIVED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(cashGroup)}
+                          title="Arquivar"
+                          className="rounded-md p-1.5 text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0-3-3m3 3 3-3M3.75 7.5h16.5M16.5 7.5V6a2.25 2.25 0 0 0-2.25-2.25h-4.5A2.25 2.25 0 0 0 7.5 6v1.5" />
+                          </svg>
+                        </button>
+                      )}
+                      {cashGroup.status === 'ARCHIVED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleRestore(cashGroup)}
+                          title="Desarquivar"
+                          className="rounded-md p-1.5 text-teal-500 transition hover:bg-teal-50 hover:text-teal-700"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3V15" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

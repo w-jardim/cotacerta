@@ -95,22 +95,14 @@ export function LedgerPage() {
             {/* Cards de resumo */}
             <div className="grid gap-4 sm:grid-cols-3">
               <StatCard
+                tone="success"
                 label="Total Entradas"
                 value={formatCurrency(ledger.summary.totalEntradas)}
-                icon={
-                  <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-                  </svg>
-                }
               />
               <StatCard
+                tone="danger"
                 label="Total Saídas"
                 value={formatCurrency(ledger.summary.totalSaidas)}
-                icon={
-                  <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
-                  </svg>
-                }
               />
               <div className={`rounded-xl p-5 shadow-sm ${saldo >= 0 ? 'bg-teal-600' : 'bg-rose-600'}`}>
                 <p className="text-sm font-medium text-white/80">Saldo Atual</p>
