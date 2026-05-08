@@ -5,10 +5,8 @@ import { AuthenticatedLayout } from '../components/layout/AuthenticatedLayout';
 import { Alert } from '../components/ui/Alert';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Input } from '../components/ui/Input';
-import { LinkButton } from '../components/ui/LinkButton';
 import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
@@ -19,6 +17,7 @@ import type {
   CreateCashGroupData,
   UpdateCashGroupData,
 } from '../features/cash-groups/types';
+import { membersApi } from '../features/members/api';
 
 export function CashGroupsPage() {
   const navigate = useNavigate();
@@ -28,6 +27,7 @@ export function CashGroupsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCashGroup, setEditingCashGroup] = useState<CashGroup | null>(null);
+  const [memberStats, setMemberStats] = useState<Record<string, { count: number; quotas: number }>>({});
 
   const currentYear = new Date().getFullYear();
   const [formData, setFormData] = useState<CreateCashGroupData>({
@@ -49,8 +49,20 @@ export function CashGroupsPage() {
     try {
       setIsLoading(true);
       setError('');
-      const data = await cashGroupsApi.getAll();
+      const [data, allMembers] = await Promise.all([
+        cashGroupsApi.getAll(),
+        membersApi.getAllUserMembers().catch(() => []),
+      ]);
       setCashGroups(data);
+
+      const stats: Record<string, { count: number; quotas: number }> = {};
+      for (const m of allMembers) {
+        if (!m.cashGroupId) continue;
+        if (!stats[m.cashGroupId]) stats[m.cashGroupId] = { count: 0, quotas: 0 };
+        stats[m.cashGroupId].count += 1;
+        stats[m.cashGroupId].quotas += m.quotasCount ?? 0;
+      }
+      setMemberStats(stats);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao carregar caixinhas');
     } finally {
@@ -217,118 +229,128 @@ export function CashGroupsPage() {
         )}
 
         {!isLoading && cashGroups.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {cashGroups.map((cashGroup) => (
-              <Card key={cashGroup.id} className="cc-group-card flex h-full flex-col">
-                <div className="relative z-10 flex h-full flex-col">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="max-w-[78%] space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-700">
-                        Grupo financeiro
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {cashGroups.map((cashGroup) => {
+              const stats = memberStats[cashGroup.id];
+              return (
+                <div
+                  key={cashGroup.id}
+                  className="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm"
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
+                        {cashGroup.cycleYear}
                       </p>
-                      <h3 className="text-[1.35rem] font-extrabold leading-tight text-slate-950">
+                      <h3 className="text-lg font-bold text-slate-900 leading-snug truncate">
                         {cashGroup.name}
                       </h3>
-                      <p className="line-clamp-2 text-sm leading-6 text-slate-600">
-                        {cashGroup.description || 'Sem descrição informada para este ciclo.'}
-                      </p>
+                      {cashGroup.description && (
+                        <p className="mt-1 text-sm text-slate-500 line-clamp-1">
+                          {cashGroup.description}
+                        </p>
+                      )}
                     </div>
                     <Badge status={cashGroup.status}>{getStatusLabel(cashGroup.status)}</Badge>
                   </div>
 
-                  <div className="cc-metric-grid mt-6">
-                    <div className="cc-metric-card">
-                      <div className="cc-metric-label">Ciclo</div>
-                      <div className="cc-metric-value">{cashGroup.cycleYear}</div>
+                  {/* Metrics */}
+                  <div className="mx-5 grid grid-cols-3 divide-x divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/70">
+                    <div className="px-3 py-3 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cota</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">
+                        R$ {parseFloat(cashGroup.quotaValue).toFixed(2)}
+                      </p>
                     </div>
-                    <div className="cc-metric-card">
-                      <div className="cc-metric-label">Valor da cota</div>
-                      <div className="cc-metric-value">R$ {parseFloat(cashGroup.quotaValue).toFixed(2)}</div>
+                    <div className="px-3 py-3 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cotistas</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">
+                        {stats != null ? stats.count : '—'}
+                      </p>
                     </div>
-                    <div className="cc-metric-card">
-                      <div className="cc-metric-label">Vencimento</div>
-                      <div className="cc-metric-value">Dia {cashGroup.dueDay}</div>
-                    </div>
-                    <div className="cc-metric-card">
-                      <div className="cc-metric-label">Máx. cotas</div>
-                      <div className="cc-metric-value">{cashGroup.maxQuotasPerMember} por cotista</div>
+                    <div className="px-3 py-3 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cotas</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">
+                        {stats != null ? stats.quotas : '—'}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="mt-6 space-y-3">
-                    <div className="cc-action-grid">
-                      <Button
-                        variant="secondary"
-                        className="rounded-2xl border-white/80 bg-white/90"
-                        onClick={() => navigate(`/caixinhas/${cashGroup.id}/cotistas`)}
-                      >
-                        Ver cotistas
-                      </Button>
-                      <Button
-                        variant="primary"
-                        className="rounded-2xl shadow-lg shadow-teal-900/15"
-                        onClick={() => navigate(`/caixinhas/${cashGroup.id}/cobrancas`)}
-                      >
-                        Cobranças
-                      </Button>
+                  <div className="mx-5 mt-2 grid grid-cols-2 divide-x divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/70">
+                    <div className="px-3 py-3 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vencimento</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">Dia {cashGroup.dueDay}</p>
                     </div>
-
-                    <div className="cc-action-strip space-y-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                          Operações do grupo
-                        </p>
-                        <button
-                          type="button"
-                          className="cc-subtle-link"
-                          onClick={() => navigate(`/caixinhas/${cashGroup.id}/emprestimos`)}
-                        >
-                          Empréstimos
-                        </button>
-                      </div>
-
-                      <div className="cc-inline-actions">
-                        <button
-                          type="button"
-                          className="cc-subtle-link"
-                          onClick={() => navigate(`/caixinhas/${cashGroup.id}/fechamento`)}
-                        >
-                          Fechamento
-                        </button>
-
-                        <button
-                          type="button"
-                          className="cc-subtle-link"
-                          onClick={() => openEditModal(cashGroup)}
-                        >
-                          Editar
-                        </button>
-
-                        {(cashGroup.status === 'ACTIVE' || cashGroup.status === 'PAUSED') && (
-                          <button
-                            type="button"
-                            className="cc-subtle-link"
-                            onClick={() => handleToggleStatus(cashGroup)}
-                          >
-                            {cashGroup.status === 'ACTIVE' ? 'Pausar' : 'Ativar'}
-                          </button>
-                        )}
-
-                        {cashGroup.status !== 'ARCHIVED' && (
-                          <LinkButton
-                            variant="danger"
-                            className="w-auto rounded-xl px-3 py-2 text-xs font-semibold"
-                            onClick={() => handleDelete(cashGroup)}
-                          >
-                            Arquivar
-                          </LinkButton>
-                        )}
-                      </div>
+                    <div className="px-3 py-3 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Máx. cotas/cotista</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">{cashGroup.maxQuotasPerMember}</p>
                     </div>
+                  </div>
+
+                  {/* Primary actions */}
+                  <div className="flex gap-2 px-5 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/caixinhas/${cashGroup.id}/cotistas`)}
+                      className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                    >
+                      Cotistas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/caixinhas/${cashGroup.id}/cobrancas`)}
+                      className="flex-1 rounded-lg bg-teal-700 py-2 text-sm font-semibold text-white transition hover:bg-teal-800"
+                    >
+                      Cobranças
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/caixinhas/${cashGroup.id}/emprestimos`)}
+                      className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                    >
+                      Empréstimos
+                    </button>
+                  </div>
+
+                  {/* Secondary actions */}
+                  <div className="mt-3 flex items-center gap-1 border-t border-slate-100 px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/caixinhas/${cashGroup.id}/fechamento`)}
+                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      Fechamento
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(cashGroup)}
+                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      Editar
+                    </button>
+                    {(cashGroup.status === 'ACTIVE' || cashGroup.status === 'PAUSED') && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(cashGroup)}
+                        className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                      >
+                        {cashGroup.status === 'ACTIVE' ? 'Pausar' : 'Ativar'}
+                      </button>
+                    )}
+                    {cashGroup.status !== 'ARCHIVED' && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(cashGroup)}
+                        className="ml-auto rounded-md px-3 py-1.5 text-xs font-semibold text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
+                      >
+                        Arquivar
+                      </button>
+                    )}
                   </div>
                 </div>
-              </Card>
-            ))}
+              );
+            })}
           </div>
         )}
 

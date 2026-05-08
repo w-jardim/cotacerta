@@ -10,11 +10,11 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, backTo, backLabel }: PageHeaderProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {backTo && <BackButton to={backTo} label={backLabel} />}
-      <div className="space-y-1">
-        <h1 className="text-3xl font-extrabold text-slate-950">{title}</h1>
-        {subtitle && <p className="max-w-3xl text-sm leading-6 text-slate-600">{subtitle}</p>}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+        {subtitle && <p className="mt-1 max-w-2xl text-sm text-slate-500">{subtitle}</p>}
       </div>
     </div>
   );

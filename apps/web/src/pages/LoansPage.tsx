@@ -411,7 +411,7 @@ export function LoansPage() {
               />
             </div>
 
-            <div className="rounded-2xl border border-teal-100 bg-teal-50/80 px-4 py-3 text-sm text-teal-900">
+            <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
               <strong className="font-semibold">Vencimento do empréstimo:</strong>{' '}
               {cycleEndDate
                 ? `até ${formatDate(cycleEndDate)} ou até a quitação total do valor tomado.`
@@ -426,7 +426,7 @@ export function LoansPage() {
               placeholder="Ex: empréstimo emergencial para o cotista"
             />
 
-            <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
+            <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
               Total previsto estimado: {formatCurrency(
                 (
                   (formData.principalAmount || 0) +
@@ -455,80 +455,74 @@ export function LoansPage() {
           <div className="space-y-6">
             {loanDetails && (
               <>
-                <div className="rounded-[26px] border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-50 p-5">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                         Resumo do empréstimo
                       </p>
-                      <h3 className="text-xl font-extrabold text-slate-950">
+                      <h3 className="text-xl font-bold text-slate-900">
                         {formatCurrency(loanDetails.principalAmount)} tomados
                       </h3>
-                      <p className="text-sm leading-6 text-slate-600">
+                      <p className="text-sm text-slate-500">
                         Juros fixos de {parseFloat(loanDetails.interestRate).toFixed(2)}% sobre o valor tomado,
                         com vencimento até {formatDate(loanDetails.dueDate)} ou quitação total.
                       </p>
                     </div>
 
-                    <div className="inline-flex w-fit items-center gap-3 rounded-2xl border border-amber-100 bg-white px-4 py-3 shadow-sm">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Status
-                        </p>
-                        <div className="mt-2">
-                          <Badge status={loanDetails.status}>{STATUS_LABELS[loanDetails.status]}</Badge>
-                        </div>
+                    <div className="shrink-0">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Status</p>
+                      <div className="mt-2">
+                        <Badge status={loanDetails.status}>{STATUS_LABELS[loanDetails.status]}</Badge>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <Card className="p-5">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-base font-bold text-slate-950">Posição financeira</h4>
-                      <p className="mt-1 text-sm text-slate-600">
-                        Separação entre principal, juros e saldo para facilitar a baixa manual.
-                      </p>
-                    </div>
+                  <div className="mb-4">
+                    <h4 className="text-base font-bold text-slate-900">Posição financeira</h4>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      Separação entre principal, juros e saldo para facilitar a baixa manual.
+                    </p>
                   </div>
 
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Valor tomado</div>
-                      <div className="mt-2 text-xl font-extrabold text-slate-950">{formatCurrency(loanDetails.principalAmount)}</div>
+                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest text-slate-400">Valor tomado</div>
+                      <div className="mt-1.5 text-lg font-bold text-slate-900">{formatCurrency(loanDetails.principalAmount)}</div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Juros totais</div>
-                      <div className="mt-2 text-xl font-extrabold text-slate-950">{formatCurrency(loanDetails.totalInterestAmount)}</div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest text-slate-400">Juros totais</div>
+                      <div className="mt-1.5 text-lg font-bold text-slate-900">{formatCurrency(loanDetails.totalInterestAmount)}</div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Total previsto</div>
-                      <div className="mt-2 text-xl font-extrabold text-slate-950">{formatCurrency(loanDetails.totalDue)}</div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest text-slate-400">Total previsto</div>
+                      <div className="mt-1.5 text-lg font-bold text-slate-900">{formatCurrency(loanDetails.totalDue)}</div>
                     </div>
-                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Recebido</div>
-                      <div className="mt-2 text-xl font-extrabold text-emerald-950">{formatCurrency(loanDetails.amountPaid)}</div>
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest text-emerald-600">Recebido</div>
+                      <div className="mt-1.5 text-lg font-bold text-emerald-900">{formatCurrency(loanDetails.amountPaid)}</div>
                     </div>
-                    <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">Juros pendentes</div>
-                      <div className="mt-2 text-xl font-extrabold text-amber-950">{formatCurrency(loanDetails.interestRemainingAmount)}</div>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest text-amber-600">Juros pendentes</div>
+                      <div className="mt-1.5 text-lg font-bold text-amber-900">{formatCurrency(loanDetails.interestRemainingAmount)}</div>
                     </div>
-                    <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-700">Principal pendente</div>
-                      <div className="mt-2 text-xl font-extrabold text-rose-950">{formatCurrency(loanDetails.principalRemainingAmount)}</div>
+                    <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest text-rose-600">Principal pendente</div>
+                      <div className="mt-1.5 text-lg font-bold text-rose-900">{formatCurrency(loanDetails.principalRemainingAmount)}</div>
                     </div>
-                    <div className="rounded-2xl border border-slate-900/10 bg-slate-900 p-4 md:col-span-2 xl:col-span-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">Saldo total em aberto</div>
-                      <div className="mt-2 text-2xl font-extrabold text-white">{formatCurrency(loanDetails.remainingAmount)}</div>
+                    <div className="rounded-lg border border-slate-800 bg-slate-900 p-3 md:col-span-2 xl:col-span-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest text-slate-400">Saldo total em aberto</div>
+                      <div className="mt-1.5 text-xl font-bold text-white">{formatCurrency(loanDetails.remainingAmount)}</div>
                     </div>
                   </div>
                 </Card>
 
-                <form onSubmit={handleRegisterPayment} className="space-y-5 rounded-[26px] border border-slate-100 bg-white p-5 shadow-sm">
+                <form onSubmit={handleRegisterPayment} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Registrar recebimento</h3>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <h3 className="text-base font-bold text-slate-900">Registrar recebimento</h3>
+                    <p className="mt-0.5 text-sm text-slate-500">
                       Registre entradas do empréstimo com atalho para quitar tudo ou receber apenas os juros pendentes.
                     </p>
                   </div>
@@ -537,7 +531,7 @@ export function LoansPage() {
                     <Button
                       type="button"
                       variant="secondary"
-                      className="justify-start rounded-2xl px-4 py-3 text-left"
+                      className="justify-start text-left"
                       onClick={() =>
                         setPaymentData((current) => ({
                           ...current,
@@ -550,7 +544,7 @@ export function LoansPage() {
                     <Button
                       type="button"
                       variant="secondary"
-                      className="justify-start rounded-2xl px-4 py-3 text-left"
+                      className="justify-start text-left"
                       disabled={parseFloat(loanDetails.interestRemainingAmount) <= 0}
                       onClick={() =>
                         setPaymentData((current) => ({
@@ -602,7 +596,7 @@ export function LoansPage() {
                     placeholder="Ex: pagamento dos juros do período ou quitação total"
                   />
 
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
                     O pagamento é baixado manualmente. Se quiser, você pode registrar apenas os juros primeiro e amortizar o principal depois.
                   </div>
 

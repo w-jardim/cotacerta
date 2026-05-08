@@ -18,7 +18,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
 
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative z-10 flex w-full max-w-2xl max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[28px] border border-white/70 bg-white/95 shadow-2xl">
+        <div className="relative z-10 flex w-full max-w-2xl max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
           <div className="mb-0 flex items-center justify-between border-b border-slate-100 px-6 pb-4 pt-6">
           <h2 className="text-xl font-bold text-slate-900">{title}</h2>
           <button

@@ -6,20 +6,8 @@
 
 :root {
   font-family: 'Manrope', system-ui, sans-serif;
-  color: #172033;
-  background:
-    radial-gradient(circle at top, rgba(15, 118, 110, 0.12), transparent 30%),
-    linear-gradient(180deg, #f7faf9 0%, #eef3f8 50%, #f7f9fc 100%);
-  --cc-bg: #f4f7fb;
-  --cc-surface: rgba(255, 255, 255, 0.9);
-  --cc-surface-strong: #ffffff;
-  --cc-border: rgba(148, 163, 184, 0.22);
-  --cc-border-strong: rgba(71, 85, 105, 0.14);
-  --cc-text: #0f172a;
-  --cc-text-muted: #475569;
   --cc-brand: #0f766e;
   --cc-brand-dark: #115e59;
-  --cc-shadow: 0 24px 60px rgba(15, 23, 42, 0.09);
 }
 
 * {
@@ -34,8 +22,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: var(--cc-text);
-  background: var(--cc-bg);
+  color: #0f172a;
+  background: #f8fafc;
 }
 
 #root {
@@ -43,7 +31,7 @@ body {
 }
 
 ::selection {
-  background: rgba(15, 118, 110, 0.18);
+  background: rgba(15, 118, 110, 0.15);
 }
 
 @layer base {
@@ -51,66 +39,56 @@ body {
     @apply antialiased;
   }
 
-  h1,
-  h2,
-  h3,
-  h4 {
+  h1, h2, h3, h4 {
     letter-spacing: -0.02em;
   }
 }
 
 @layer components {
+  /* Surfaces */
   .cc-panel {
-    @apply rounded-[28px] border bg-white/90 shadow-sm backdrop-blur-sm;
-    border-color: var(--cc-border);
-    box-shadow: var(--cc-shadow);
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
   }
 
   .cc-panel-subtle {
-    @apply rounded-[24px] border bg-white/75 backdrop-blur-sm;
-    border-color: var(--cc-border);
+    @apply rounded-xl border border-slate-200 bg-slate-50;
   }
 
-  .cc-alert {
-    @apply rounded-2xl border px-4 py-3 text-sm;
-  }
-
+  /* Table */
   .cc-table-shell {
-    @apply overflow-hidden rounded-[28px] border bg-white/90 shadow-sm backdrop-blur-sm;
-    border-color: var(--cc-border);
-    box-shadow: var(--cc-shadow);
+    @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
   }
 
   .cc-table {
-    @apply min-w-full divide-y;
-    border-color: var(--cc-border);
+    @apply min-w-full divide-y divide-slate-100;
   }
 
   .cc-table thead {
-    @apply bg-slate-50/90;
+    @apply bg-slate-50;
   }
 
   .cc-table tbody {
-    @apply divide-y bg-white/80;
-    border-color: var(--cc-border);
+    @apply divide-y divide-slate-100 bg-white;
   }
 
   .cc-th {
-    @apply px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500;
+    @apply px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-widest text-slate-500;
   }
 
   .cc-td {
     @apply px-5 py-4 text-sm text-slate-700;
   }
 
+  /* Layout helpers */
   .cc-section-head {
     @apply flex flex-col gap-4 md:flex-row md:items-end md:justify-between;
   }
 
-  .cc-action-strip {
-    @apply rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4;
+  .cc-alert {
+    @apply rounded-lg border px-4 py-3 text-sm;
   }
 
+  /* Legacy — kept for backward compat */
   .cc-action-grid {
     @apply grid gap-2 sm:grid-cols-2;
   }
@@ -119,43 +97,32 @@ body {
     @apply flex flex-wrap gap-2;
   }
 
-  .cc-group-card {
-    @apply relative overflow-hidden rounded-[30px] border bg-white/95 p-6 shadow-sm backdrop-blur-sm;
-    border-color: rgba(148, 163, 184, 0.18);
-    box-shadow:
-      0 26px 60px rgba(15, 23, 42, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  }
-
-  .cc-group-card::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 132px;
-    background:
-      radial-gradient(circle at top left, rgba(20, 184, 166, 0.15), transparent 54%),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
-    pointer-events: none;
-  }
-
   .cc-metric-grid {
     @apply grid grid-cols-2 gap-3;
   }
 
   .cc-metric-card {
-    @apply rounded-2xl border border-white/80 bg-white/85 px-4 py-3 shadow-sm;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    @apply rounded-lg border border-slate-100 bg-slate-50 px-4 py-3;
   }
 
   .cc-metric-label {
-    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500;
+    @apply text-[11px] font-semibold uppercase tracking-widest text-slate-400;
   }
 
   .cc-metric-value {
-    @apply mt-2 text-sm font-bold text-slate-900;
+    @apply mt-1.5 text-sm font-bold text-slate-900;
   }
 
   .cc-subtle-link {
-    @apply inline-flex items-center rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
+    @apply inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
+  }
+
+  /* Deprecated — kept so CashGroupsPage card still renders */
+  .cc-action-strip {
+    @apply rounded-lg border border-slate-200 bg-slate-50 p-4;
+  }
+
+  .cc-group-card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
   }
 }

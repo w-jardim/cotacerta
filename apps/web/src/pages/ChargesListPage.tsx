@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { PageHeader } from '../components/ui/PageHeader';
+import { StatCard } from '../components/ui/StatCard';
 import { chargesApi } from '../features/charges/api';
 import type { MonthlyCharge } from '../features/charges/types';
 
@@ -88,18 +89,9 @@ export function ChargesListPage() {
         {error && <Alert variant="error">{error}</Alert>}
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="p-6">
-            <p className="text-3xl font-extrabold text-slate-950">{totalCharges}</p>
-            <p className="mt-2 text-sm text-slate-600">Total de cobranças</p>
-          </Card>
-          <Card className="p-6">
-            <p className="text-3xl font-extrabold text-slate-950">{formatCurrency(totalDue)}</p>
-            <p className="mt-2 text-sm text-slate-600">Valor total</p>
-          </Card>
-          <Card className="p-6">
-            <p className="text-3xl font-extrabold text-slate-950">{formatCurrency(totalPending)}</p>
-            <p className="mt-2 text-sm text-slate-600">Pendente</p>
-          </Card>
+          <StatCard tone="brand" value={totalCharges} label="Total de cobranças" />
+          <StatCard tone="neutral" value={formatCurrency(totalDue)} label="Valor total" />
+          <StatCard tone="warning" value={formatCurrency(totalPending)} label="Pendente" />
         </div>
 
         {loading && (

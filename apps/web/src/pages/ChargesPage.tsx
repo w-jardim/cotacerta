@@ -526,7 +526,7 @@ export function ChargesPage() {
                         <option value="PIX">Pix</option>
                       </Select>
 
-                      <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
                         <div className="flex items-center justify-between gap-3">
                           <span>Valor original</span>
                           <strong>{formatCurrency(chargeDetails.baseAmount)}</strong>
@@ -567,7 +567,7 @@ export function ChargesPage() {
                           type="file"
                           accept="image/png,image/jpeg,image/webp,application/pdf"
                           onChange={handleReceiptChange}
-                          className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm file:mr-4 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+                          className="block w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                         />
                         {receipt && (
                           <p className="mt-2 text-xs text-slate-500">
@@ -600,15 +600,15 @@ export function ChargesPage() {
                   </div>
 
                   {chargeDetails.payments.length === 0 ? (
-                    <div className="rounded-2xl bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                       Nenhum pagamento registrado nesta cobrança.
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {chargeDetails.payments.map((payment) => (
                         <div
                           key={payment.id}
-                          className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4"
+                          className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"
                         >
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
