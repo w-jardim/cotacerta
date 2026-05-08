@@ -13,6 +13,7 @@ import { MemberAccessModule } from './member-access/member-access.module';
 import { MemberPortalModule } from './member-portal/member-portal.module';
 import { AnnualClosingsModule } from './annual-closings/annual-closings.module';
 import { PaymentRequestsModule } from './payment-requests/payment-requests.module';
+import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { PaymentRequestsModule } from './payment-requests/payment-requests.modul
     MemberPortalModule,
     AnnualClosingsModule,
     PaymentRequestsModule,
+    AIModule,
   ],
   controllers: [AppController],
   providers: [AppService],
