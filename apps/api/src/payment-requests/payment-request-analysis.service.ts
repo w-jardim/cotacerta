@@ -200,7 +200,7 @@ export class PaymentRequestAnalysisService {
         extractedTxid: null,
         extractedBank: null,
         issues: [
-          'Comprovante em imagem sem OCR local confiável nesta fase. Revisão manual necessária.',
+          'Comprovante enviado como imagem. O gestor fará a verificação manual dos dados.',
         ],
       };
     }
@@ -214,7 +214,7 @@ export class PaymentRequestAnalysisService {
         extractedPixKey: null,
         extractedTxid: null,
         extractedBank: null,
-        issues: ['Tipo de comprovante sem leitura automática suportada nesta fase.'],
+        issues: ['Formato de comprovante não reconhecido. O gestor verificará manualmente.'],
       };
     }
 
@@ -234,7 +234,7 @@ export class PaymentRequestAnalysisService {
           extractedPixKey: null,
           extractedTxid: null,
           extractedBank: null,
-          issues: ['O PDF não possui texto extraível suficiente para análise.'],
+          issues: ['Não foi possível ler as informações do PDF. O gestor verificará manualmente.'],
         };
       }
 
@@ -259,7 +259,7 @@ export class PaymentRequestAnalysisService {
         extractedPixKey: null,
         extractedTxid: null,
         extractedBank: null,
-        issues: ['Falha ao ler o PDF localmente. Revisão manual necessária.'],
+        issues: ['Erro ao processar o comprovante. O gestor verificará manualmente.'],
       };
     }
   }
