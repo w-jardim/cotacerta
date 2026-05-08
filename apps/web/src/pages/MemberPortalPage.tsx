@@ -646,19 +646,6 @@ export function MemberPortalPage() {
             </div>
           </dl>
 
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-            <p className="text-sm text-slate-500">
-              Precisa declarar o pagamento da sua cota?
-            </p>
-            <Button
-              variant="secondary"
-              className="text-sm whitespace-nowrap"
-              onClick={() => openPayModal({ type: 'QUOTA_DECLARE' })}
-            >
-              Declarar pagamento de cota
-            </Button>
-          </div>
-
           {/* Informações de pagamento da caixinha */}
           {(cashGroup.receivingPixKey || cashGroup.receivingInstructions) && (
             <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50 px-4 py-3 space-y-1">

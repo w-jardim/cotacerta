@@ -116,5 +116,18 @@ export interface AdminPaymentRequest {
     description: string | null;
     txid: string | null;
   } | null;
+  reviewSummary: {
+    expectedAmount: string | null;
+    declaredAmount: string;
+    pixAmount: string | null;
+    configuredPixKey: string | null;
+    configuredReceiverName: string | null;
+    amountMatchesExpected: boolean | null;
+    pixMatchesDeclared: boolean | null;
+    pixKeyMatchesConfigured: boolean | null;
+    receiverMatchesConfigured: boolean | null;
+    warnings: string[];
+    recommendation: string;
+  };
   reviewedBy: { id: string; name: string } | null;
 }

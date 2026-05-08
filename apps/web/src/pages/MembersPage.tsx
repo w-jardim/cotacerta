@@ -88,6 +88,12 @@ export function MembersPage() {
   const [reviewAction, setReviewAction] = useState<'confirm' | 'reject' | null>(null);
   const [reviewPayError, setReviewPayError] = useState('');
   const [showReceiptFor, setShowReceiptFor] = useState<string | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<{
+    fileName: string | null;
+    mimeType: string | null;
+    dataUrl: string;
+    memberName: string;
+  } | null>(null);
 
   // Access management state
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
@@ -182,6 +188,23 @@ export function MembersPage() {
     setReviewAction(null);
     setReviewPayError('');
     setShowReceiptFor(null);
+    setReceiptPreview(null);
+  }
+
+  function renderCheckBadge(label: string, value: boolean | null) {
+    return (
+      <span
+        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+          value === true
+            ? 'bg-green-100 text-green-800'
+            : value === false
+              ? 'bg-rose-100 text-rose-700'
+              : 'bg-slate-100 text-slate-600'
+        }`}
+      >
+        {label}: {value === true ? 'Conferido' : value === false ? 'Atenção' : 'Sem comparação'}
+      </span>
+    );
   }
 
   async function handleConfirmPayRequest(req: AdminPaymentRequest) {
@@ -1019,22 +1042,109 @@ export function MembersPage() {
                     </div>
                   )}
 
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-700">
+                    <p className="font-semibold uppercase tracking-wide text-slate-600">
+                      Ajuda para conferência
+                    </p>
+                    <p className="mt-1 text-slate-600">
+                      {req.reviewSummary.recommendation}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {renderCheckBadge(
+                        'Valor da cobrança',
+                        req.reviewSummary.amountMatchesExpected,
+                      )}
+                      {renderCheckBadge(
+                        'Valor do Pix',
+                        req.reviewSummary.pixMatchesDeclared,
+                      )}
+                      {renderCheckBadge(
+                        'Chave Pix',
+                        req.reviewSummary.pixKeyMatchesConfigured,
+                      )}
+                      {renderCheckBadge(
+                        'Recebedor',
+                        req.reviewSummary.receiverMatchesConfigured,
+                      )}
+                    </div>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                      <div>
+                        <p className="font-medium text-slate-500">Valor esperado</p>
+                        <p className="text-slate-900">
+                          {req.reviewSummary.expectedAmount
+                            ? `R$ ${req.reviewSummary.expectedAmount}`
+                            : 'Não disponível'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-500">Valor informado pelo cotista</p>
+                        <p className="text-slate-900">
+                          R$ {req.reviewSummary.declaredAmount}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-500">Valor gerado no Pix</p>
+                        <p className="text-slate-900">
+                          {req.reviewSummary.pixAmount
+                            ? `R$ ${req.reviewSummary.pixAmount}`
+                            : 'Não disponível'}
+                        </p>
+                      </div>
+                    </div>
+                    {req.reviewSummary.warnings.length > 0 && (
+                      <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-2 text-amber-800">
+                        {req.reviewSummary.warnings.map((warning) => (
+                          <p key={warning}>{warning}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {req.receiptDataUrl && (
                     <div>
-                      <button
-                        type="button"
-                        className="text-xs font-medium text-teal-700 underline"
-                        onClick={() => setShowReceiptFor(showReceiptFor === req.id ? null : req.id)}
-                      >
-                        {showReceiptFor === req.id ? 'Ocultar comprovante' : 'Ver comprovante'}
-                      </button>
+                      <div className="flex flex-wrap gap-3 text-xs">
+                        <button
+                          type="button"
+                          className="font-medium text-teal-700 underline"
+                          onClick={() =>
+                            setShowReceiptFor(showReceiptFor === req.id ? null : req.id)
+                          }
+                        >
+                          {showReceiptFor === req.id
+                            ? 'Ocultar comprovante'
+                            : 'Ver comprovante'}
+                        </button>
+                        <button
+                          type="button"
+                          className="font-medium text-teal-700 underline"
+                          onClick={() =>
+                            setReceiptPreview({
+                              fileName: req.receiptFileName,
+                              mimeType: req.receiptMimeType,
+                              dataUrl: req.receiptDataUrl!,
+                              memberName: req.member.name,
+                            })
+                          }
+                        >
+                          Abrir ampliado
+                        </button>
+                        <a
+                          href={req.receiptDataUrl}
+                          download={req.receiptFileName || 'comprovante'}
+                          className="font-medium text-teal-700 underline"
+                        >
+                          Baixar comprovante
+                        </a>
+                      </div>
                       {showReceiptFor === req.id && (
                         req.receiptMimeType?.startsWith('image/') ? (
-                          <img
-                            src={req.receiptDataUrl}
-                            alt="Comprovante"
-                            className="mt-2 max-h-64 w-full rounded-lg object-contain border border-slate-100"
-                          />
+                          <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50 p-2">
+                            <img
+                              src={req.receiptDataUrl}
+                              alt="Comprovante"
+                              className="mx-auto max-h-80 w-full rounded-lg object-contain"
+                            />
+                          </div>
                         ) : (
                           <a
                             href={req.receiptDataUrl}
@@ -1122,6 +1232,50 @@ export function MembersPage() {
               </Button>
             </div>
           </form>
+        </Modal>
+
+        <Modal
+          isOpen={receiptPreview != null}
+          onClose={() => setReceiptPreview(null)}
+          title={`Comprovante ampliado${receiptPreview ? ` — ${receiptPreview.memberName}` : ''}`}
+        >
+          {receiptPreview && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-3 text-sm">
+                <a
+                  href={receiptPreview.dataUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-teal-700 underline"
+                >
+                  Abrir em nova aba
+                </a>
+                <a
+                  href={receiptPreview.dataUrl}
+                  download={receiptPreview.fileName || 'comprovante'}
+                  className="font-medium text-teal-700 underline"
+                >
+                  Baixar arquivo
+                </a>
+              </div>
+
+              {receiptPreview.mimeType?.startsWith('image/') ? (
+                <div className="max-h-[75vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <img
+                    src={receiptPreview.dataUrl}
+                    alt="Comprovante ampliado"
+                    className="mx-auto h-auto max-w-none rounded-lg"
+                  />
+                </div>
+              ) : (
+                <iframe
+                  src={receiptPreview.dataUrl}
+                  title="Comprovante"
+                  className="h-[75vh] w-full rounded-xl border border-slate-200"
+                />
+              )}
+            </div>
+          )}
         </Modal>
       </div>
     </AuthenticatedLayout>

@@ -266,6 +266,10 @@ export class MemberPortalService {
       );
     }
 
+    if (dto.receiptDataUrl) {
+      await this.assertReceiptNotReused(member.id, dto.receiptDataUrl);
+    }
+
     if (dto.type === 'MONTHLY_CHARGE' && dto.monthlyChargeId) {
       const charge = await this.prisma.monthlyCharge.findFirst({
         where: { id: dto.monthlyChargeId, memberId: member.id },
@@ -474,6 +478,11 @@ export class MemberPortalService {
     }
 
     this.validateReceipt(dto);
+    await this.assertReceiptNotReused(
+      member.id,
+      dto.receiptDataUrl,
+      request.id,
+    );
 
     const updated = await this.prisma.paymentRequest.update({
       where: { id: request.id },
@@ -687,6 +696,36 @@ export class MemberPortalService {
 
     if (estimatedSizeBytes > 5 * 1024 * 1024) {
       throw new BadRequestException('O comprovante deve ter no máximo 5MB.');
+    }
+  }
+
+  private async assertReceiptNotReused(
+    memberId: string,
+    receiptDataUrl: string,
+    currentRequestId?: string,
+  ) {
+    const duplicatedReceipt = await this.prisma.paymentRequest.findFirst({
+      where: {
+        memberId,
+        receiptDataUrl,
+        ...(currentRequestId
+          ? {
+              NOT: {
+                id: currentRequestId,
+              },
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        createdAt: true,
+      },
+    });
+
+    if (duplicatedReceipt) {
+      throw new BadRequestException(
+        'Este comprovante já foi enviado anteriormente. Envie um comprovante diferente para evitar duplicidade.',
+      );
     }
   }
 }

@@ -191,9 +191,9 @@ export class CashGroupsService {
   }
 
   async getPaymentRequests(groupId: string, userId: string) {
-    await this.findOne(groupId, userId);
+    const cashGroup = await this.findOne(groupId, userId);
 
-    return this.prisma.paymentRequest.findMany({
+    const requests = await this.prisma.paymentRequest.findMany({
       where: { cashGroupId: groupId },
       include: {
         member: { select: { id: true, name: true } },
@@ -208,6 +208,10 @@ export class CashGroupsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return requests.map((request) =>
+      this.attachReviewSummary(request, cashGroup),
+    );
   }
 
   async confirmPaymentRequest(
@@ -399,5 +403,93 @@ export class CashGroupsService {
         'Ao habilitar Pix, informe o nome do recebedor.',
       );
     }
+  }
+
+  private attachReviewSummary(request: any, cashGroup: any) {
+    const expectedAmount =
+      request.type === 'MONTHLY_CHARGE' && request.monthlyCharge
+        ? Number(request.monthlyCharge.amountDue) -
+          Number(request.monthlyCharge.amountPaid)
+        : request.type === 'LOAN' && request.loan
+          ? Number(request.loan.totalDue) - Number(request.loan.amountPaid)
+          : null;
+
+    const declaredAmount = Number(request.amountDeclared);
+    const pixAmount = request.pixPayload ? Number(request.pixPayload.amount) : null;
+    const configuredPixKey = cashGroup.receivingPixKey ?? null;
+    const configuredReceiverName = cashGroup.receivingPixKeyHolder ?? null;
+    const normalizedConfiguredReceiver = configuredReceiverName
+      ? this.normalizeReviewText(configuredReceiverName)
+      : null;
+    const normalizedPayloadReceiver = request.pixPayload?.receiverName
+      ? this.normalizeReviewText(request.pixPayload.receiverName)
+      : null;
+
+    const amountMatchesExpected =
+      expectedAmount == null
+        ? null
+        : Math.abs(declaredAmount - expectedAmount) < 0.01;
+    const pixMatchesDeclared =
+      pixAmount == null ? null : Math.abs(pixAmount - declaredAmount) < 0.01;
+    const pixKeyMatchesConfigured =
+      request.pixPayload?.pixKey && configuredPixKey
+        ? request.pixPayload.pixKey === configuredPixKey
+        : null;
+    const receiverMatchesConfigured =
+      normalizedPayloadReceiver && normalizedConfiguredReceiver
+        ? normalizedPayloadReceiver === normalizedConfiguredReceiver
+        : null;
+
+    const warnings: string[] = [];
+
+    if (amountMatchesExpected === false && expectedAmount != null) {
+      warnings.push('O valor informado não bate com o valor esperado para esta cobrança.');
+    }
+
+    if (pixMatchesDeclared === false) {
+      warnings.push('O valor gerado no Pix não bate com o valor informado pelo cotista.');
+    }
+
+    if (pixKeyMatchesConfigured === false) {
+      warnings.push('A chave Pix usada no pagamento está diferente da chave cadastrada na caixinha.');
+    }
+
+    if (receiverMatchesConfigured === false) {
+      warnings.push('O nome do recebedor está diferente do cadastro da caixinha.');
+    }
+
+    const recommendation =
+      warnings.length === 0 && request.method === 'PIX'
+        ? 'Os principais dados do pagamento estão consistentes. Ainda assim, a confirmação final continua com o gestor.'
+        : warnings.length > 0
+          ? 'Foram encontrados pontos de atenção. Vale revisar o comprovante com mais cuidado antes de confirmar.'
+          : 'Ainda não há informações suficientes para fazer uma pré-conferência automática.';
+
+    return {
+      ...request,
+      reviewSummary: {
+        expectedAmount:
+          expectedAmount == null ? null : expectedAmount.toFixed(2),
+        declaredAmount: declaredAmount.toFixed(2),
+        pixAmount: pixAmount == null ? null : pixAmount.toFixed(2),
+        configuredPixKey,
+        configuredReceiverName,
+        amountMatchesExpected,
+        pixMatchesDeclared,
+        pixKeyMatchesConfigured,
+        receiverMatchesConfigured,
+        warnings,
+        recommendation,
+      },
+    };
+  }
+
+  private normalizeReviewText(value: string) {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
   }
 }
