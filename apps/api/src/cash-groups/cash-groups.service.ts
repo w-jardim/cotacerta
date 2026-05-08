@@ -9,12 +9,14 @@ import { CreateCashGroupDto } from './dto/create-cash-group.dto';
 import { UpdateCashGroupDto } from './dto/update-cash-group.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PaymentRequestAnalysisService } from '../payment-requests/payment-request-analysis.service';
+import { CommunicationService } from '../communication/communication.service';
 
 @Injectable()
 export class CashGroupsService {
   constructor(
     private prisma: PrismaService,
     private readonly paymentRequestAnalysisService: PaymentRequestAnalysisService,
+    private readonly communicationService: CommunicationService,
   ) {}
 
   async create(userId: string, createDto: CreateCashGroupDto) {
@@ -283,6 +285,7 @@ export class CashGroupsService {
 
     const req = await this.prisma.paymentRequest.findFirst({
       where: { id: requestId, cashGroupId: groupId },
+      include: { member: { select: { userId: true } } },
     });
 
     if (!req) {
@@ -376,6 +379,20 @@ export class CashGroupsService {
       }
     });
 
+    if (req.member?.userId) {
+      this.communicationService.createInternal({
+        senderUserId: userId,
+        recipientUserId: req.member.userId,
+        cashGroupId: groupId,
+        memberId: req.memberId ?? undefined,
+        direction: 'SYSTEM_TO_MEMBER',
+        title: 'Pagamento confirmado',
+        body: `Seu pagamento de R$ ${parseFloat(req.amountDeclared.toString()).toFixed(2).replace('.', ',')} foi confirmado pelo gestor.${reviewNotes ? ` Obs: ${reviewNotes}` : ''}`,
+        eventType: 'payment_request.confirmed',
+        data: { paymentRequestId: requestId },
+      }).catch(() => {});
+    }
+
     return { message: 'Pagamento confirmado com sucesso.' };
   }
 
@@ -389,6 +406,7 @@ export class CashGroupsService {
 
     const req = await this.prisma.paymentRequest.findFirst({
       where: { id: requestId, cashGroupId: groupId },
+      include: { member: { select: { userId: true } } },
     });
 
     if (!req) {
@@ -410,6 +428,20 @@ export class CashGroupsService {
         reviewNotes: reviewNotes ?? null,
       },
     });
+
+    if (req.member?.userId) {
+      this.communicationService.createInternal({
+        senderUserId: userId,
+        recipientUserId: req.member.userId,
+        cashGroupId: groupId,
+        memberId: req.memberId ?? undefined,
+        direction: 'SYSTEM_TO_MEMBER',
+        title: 'Comprovante rejeitado',
+        body: `Seu comprovante foi rejeitado pelo gestor.${reviewNotes ? ` Motivo: ${reviewNotes}` : ' Por favor, envie um novo comprovante ou entre em contato com o gestor.'}`,
+        eventType: 'payment_request.rejected',
+        data: { paymentRequestId: requestId },
+      }).catch(() => {});
+    }
 
     return { message: 'Solicitação rejeitada.' };
   }

@@ -13,6 +13,7 @@ import { MemberAccessModule } from './member-access/member-access.module';
 import { MemberPortalModule } from './member-portal/member-portal.module';
 import { AnnualClosingsModule } from './annual-closings/annual-closings.module';
 import { PaymentRequestsModule } from './payment-requests/payment-requests.module';
+import { CommunicationModule } from './communication/communication.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +30,7 @@ import { PaymentRequestsModule } from './payment-requests/payment-requests.modul
     MemberPortalModule,
     AnnualClosingsModule,
     PaymentRequestsModule,
+    CommunicationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

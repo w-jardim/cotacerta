@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../features/auth/auth-context';
+import { NotificationBell } from '../ui/NotificationBell';
 
 interface AuthenticatedLayoutProps {
   children: ReactNode;
@@ -85,10 +86,11 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       {/* Brand */}
-      <div className="flex h-14 shrink-0 items-center border-b border-slate-100 px-5">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
         <span className="text-[10px] font-black uppercase tracking-[0.32em] text-teal-700">
           CotaCerta
         </span>
+        <NotificationBell />
       </div>
 
       {/* Nav */}
@@ -165,9 +167,10 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
           </svg>
         </button>
-        <span className="text-[10px] font-black uppercase tracking-[0.32em] text-teal-700">
+        <span className="flex-1 text-[10px] font-black uppercase tracking-[0.32em] text-teal-700">
           CotaCerta
         </span>
+        <NotificationBell />
       </div>
 
       {/* Main content */}

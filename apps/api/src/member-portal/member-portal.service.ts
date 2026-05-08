@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PixPayloadService } from '../pix/pix-payload.service';
 import { PaymentRequestAnalysisService } from '../payment-requests/payment-request-analysis.service';
 import { ReceiptFingerprintService } from '../common/receipt/receipt-fingerprint.service';
+import { CommunicationService } from '../communication/communication.service';
 
 export interface UpdateMemberProfileDto {
   name?: string;
@@ -43,6 +44,7 @@ export class MemberPortalService {
     private readonly pixPayloadService: PixPayloadService,
     private readonly paymentRequestAnalysisService: PaymentRequestAnalysisService,
     private readonly receiptFingerprintService: ReceiptFingerprintService,
+    private readonly communicationService: CommunicationService,
   ) {}
 
   private async getMemberByUserId(userId: string) {
@@ -57,6 +59,7 @@ export class MemberPortalService {
             quotaValue: true,
             dueDay: true,
             status: true,
+            ownerUserId: true,
             receivingPixEnabledForCharges: true,
             receivingPixEnabledForLoans: true,
             receivingPixKey: true,
@@ -334,6 +337,18 @@ export class MemberPortalService {
             request.id,
           )
         : null;
+
+    this.communicationService.createInternal({
+      senderUserId: userId,
+      recipientUserId: member.cashGroup.ownerUserId,
+      cashGroupId: member.cashGroupId,
+      memberId: member.id,
+      direction: 'SYSTEM_TO_ADMIN',
+      title: 'Novo comprovante recebido',
+      body: `${member.name} enviou um comprovante de R$ ${parseFloat(request.amountDeclared.toString()).toFixed(2).replace('.', ',')} aguardando sua confirmação.`,
+      eventType: 'payment_request.receipt_attached',
+      data: { paymentRequestId: request.id },
+    }).catch(() => {});
 
     return {
       message: this.buildMemberFacingReceiptMessage(

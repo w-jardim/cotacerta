@@ -447,6 +447,47 @@ model AnnualClosingMemberResult {
 }
 
 // ──────────────────────────────────────────────────────────
+// Comunicação Interna (Fase 14B)
+// ──────────────────────────────────────────────────────────
+
+enum CommunicationChannel {
+  INTERNAL
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum CommunicationDirection {
+  ADMIN_TO_MEMBER
+  MEMBER_TO_ADMIN
+  SYSTEM_TO_ADMIN
+  SYSTEM_TO_MEMBER
+}
+
+model CommunicationMessage {
+  id              String               @id @default(cuid())
+  senderUserId    String?              @map("sender_user_id")
+  recipientUserId String               @map("recipient_user_id")
+  cashGroupId     String?              @map("cash_group_id")
+  memberId        String?              @map("member_id")
+  direction       CommunicationDirection
+  channel         CommunicationChannel  @default(INTERNAL)
+  title           String
+  body            String               @db.Text
+  eventType       String?              @map("event_type")
+  data            Json?
+  isRead          Boolean              @default(false) @map("is_read")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  readAt          DateTime?            @map("read_at")
+
+  @@index([recipientUserId])
+  @@index([recipientUserId, isRead])
+  @@index([senderUserId])
+  @@index([cashGroupId])
+  @@map("communication_messages")
+}
+
+// ──────────────────────────────────────────────────────────
 // AI / IA Integration (Fase 13B)
 // ──────────────────────────────────────────────────────────
 

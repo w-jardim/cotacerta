@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../features/auth/auth-context';
 import { Button } from '../ui/Button';
+import { NotificationBell } from '../ui/NotificationBell';
 
 interface MemberPortalLayoutProps {
   children: ReactNode;
@@ -50,6 +51,8 @@ export function MemberPortalLayout({ children }: MemberPortalLayoutProps) {
             </div>
 
             <div className="flex items-center justify-between gap-3 lg:justify-end">
+              <NotificationBell />
+
               <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 text-right shadow-sm">
                 <p className="text-sm font-semibold text-slate-900">
                   {user?.name}

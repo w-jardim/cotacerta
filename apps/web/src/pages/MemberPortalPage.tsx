@@ -10,6 +10,7 @@ import { Modal } from '../components/ui/Modal';
 import { StatCard } from '../components/ui/StatCard';
 import { authApi } from '../features/auth/api';
 import { memberPortalApi } from '../features/member-portal/api';
+import { communicationsApi } from '../features/communications/api';
 import type {
   PortalMember,
   PortalDebts,
@@ -110,6 +111,32 @@ export function MemberPortalPage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+
+  // Contact admin
+  const [isContactAdminOpen, setIsContactAdminOpen] = useState(false);
+  const [contactTitle, setContactTitle] = useState('');
+  const [contactBody, setContactBody] = useState('');
+  const [contactError, setContactError] = useState('');
+  const [contactSuccess, setContactSuccess] = useState('');
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+
+  async function handleContactAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!contactTitle.trim() || !contactBody.trim()) return;
+    setIsSubmittingContact(true);
+    setContactError('');
+    setContactSuccess('');
+    try {
+      await communicationsApi.contactAdmin({ title: contactTitle.trim(), body: contactBody.trim() });
+      setContactSuccess('Mensagem enviada ao gestor com sucesso!');
+      setContactTitle('');
+      setContactBody('');
+    } catch {
+      setContactError('Não foi possível enviar a mensagem. Tente novamente.');
+    } finally {
+      setIsSubmittingContact(false);
+    }
+  }
 
   // Payment request
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -717,6 +744,19 @@ export function MemberPortalPage() {
           )}
         </div>
 
+        {/* Contatar gestor */}
+        <div className="rounded-2xl border border-white/70 bg-white/80 px-6 py-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-slate-900">Contatar gestor</h3>
+            <Button variant="secondary" onClick={() => setIsContactAdminOpen(true)} className="text-sm">
+              Nova mensagem
+            </Button>
+          </div>
+          <p className="text-sm text-slate-500">
+            Envie uma mensagem diretamente ao gestor da sua caixinha.
+          </p>
+        </div>
+
         {/* Meu Perfil */}
         <div className="rounded-2xl border border-white/70 bg-white/80 px-6 py-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
@@ -1102,6 +1142,42 @@ export function MemberPortalPage() {
                 </div>
               </>
             )}
+          </form>
+        </Modal>
+
+        {/* Modal: Contatar gestor */}
+        <Modal isOpen={isContactAdminOpen} onClose={() => { setIsContactAdminOpen(false); setContactError(''); setContactSuccess(''); }} title="Enviar mensagem ao gestor">
+          <form onSubmit={handleContactAdmin} className="space-y-4">
+            {contactError && <Alert variant="error">{contactError}</Alert>}
+            {contactSuccess && <Alert variant="success">{contactSuccess}</Alert>}
+            <Input
+              label="Assunto"
+              value={contactTitle}
+              onChange={(e) => setContactTitle(e.target.value)}
+              placeholder="Ex: Dúvida sobre minha cobrança"
+              required
+              maxLength={120}
+            />
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Mensagem</label>
+              <textarea
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                rows={4}
+                value={contactBody}
+                onChange={(e) => setContactBody(e.target.value)}
+                placeholder="Descreva sua dúvida ou mensagem..."
+                required
+                maxLength={2000}
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" variant="secondary" onClick={() => setIsContactAdminOpen(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button type="submit" isLoading={isSubmittingContact} className="flex-1">
+                Enviar
+              </Button>
+            </div>
           </form>
         </Modal>
 
