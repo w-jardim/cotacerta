@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { Prisma, PaymentRequestAnalysisStatus, PaymentRequestStatus } from '@prisma/client';
 import { PDFParse } from 'pdf-parse';
 import { PrismaService } from '../prisma/prisma.service';
+import { AIProviderFactory } from '../ai/ai-provider.factory';
 
 type PaymentRequestWithContext = Prisma.PaymentRequestGetPayload<{
   include: {
@@ -38,7 +40,10 @@ interface ExpectedReceiptData {
 
 @Injectable()
 export class PaymentRequestAnalysisService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly aiFactory: AIProviderFactory | null,
+  ) {}
 
   async analyzePaymentRequest(requestId: string) {
     const request = await this.getRequestWithContext(requestId);
@@ -117,7 +122,7 @@ export class PaymentRequestAnalysisService {
       dateLooksValid,
     });
 
-    return this.persistAnalysis(request, {
+    const result = await this.persistAnalysis(request, {
       status,
       extractedText: extracted.extractedText,
       extractedAmount: this.toDecimalOrNull(extracted.extractedAmount),
@@ -135,6 +140,10 @@ export class PaymentRequestAnalysisService {
       dateLooksValid,
       issues,
     });
+
+    void this.tryLogAIAnalysis(request, extracted, expected);
+
+    return result;
   }
 
   async getAnalysisOrThrow(requestId: string) {
@@ -703,6 +712,48 @@ export class PaymentRequestAnalysisService {
     }
 
     return trimmed.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  }
+
+  private async tryLogAIAnalysis(
+    request: PaymentRequestWithContext,
+    extracted: ExtractedReceiptData,
+    expected: ExpectedReceiptData,
+  ): Promise<void> {
+    if (!this.aiFactory) return;
+    try {
+      const userId = request.cashGroup.ownerUserId;
+      const provider = await this.aiFactory.getProvider(userId);
+      const input = {
+        extractedAmount: extracted.extractedAmount,
+        expectedAmount: expected.expectedAmount,
+        extractedReceiver: extracted.extractedReceiver,
+        expectedReceiver: expected.expectedReceiver,
+        extractedPixKey: extracted.extractedPixKey,
+        expectedPixKey: expected.expectedPixKey,
+      };
+      const aiResult = await provider.analyze({
+        context: 'payment-analysis',
+        input,
+        expectedOutput: 'approve | review',
+        userId,
+        metadata: { paymentRequestId: request.id },
+      });
+      const inputHash = createHash('sha256').update(JSON.stringify(input)).digest('hex');
+      await this.prisma.aIAnalysisLog.create({
+        data: {
+          userId,
+          feature: 'payment-analysis',
+          provider: aiResult.metadata.provider,
+          inputHash,
+          suggestion: aiResult.suggestions,
+          confidence: new Prisma.Decimal((aiResult.confidence * 100).toFixed(2)),
+          reasoning: aiResult.reasoning,
+          metadata: aiResult.metadata,
+        },
+      });
+    } catch {
+      // silencioso — log de auditoria não deve bloquear o fluxo principal
+    }
   }
 
   private toDecimalOrNull(value: number | null) {
