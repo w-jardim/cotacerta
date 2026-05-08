@@ -443,3 +443,48 @@ model AnnualClosingMemberResult {
   @@index([memberId])
   @@map("annual_closing_member_results")
 }
+
+// ──────────────────────────────────────────────────────────
+// AI / IA Integration (Fase 13B - NÃO IMPLEMENTADO AINDA)
+// ──────────────────────────────────────────────────────────
+// 
+// Os modelos abaixo serão adicionados na Fase 13B.
+// NÃO criar migration agora.
+// 
+// model GestorAIConfig {
+//   id              String   @id @default(cuid())
+//   userId          String   @unique
+//   aiEnabled       Boolean  @default(false)
+//   provider        String   @default("local") // "openai" | "local"
+//   apiKeyEncrypted String?  // Chave OpenAI própria do gestor (opcional)
+//   createdAt       DateTime @default(now())
+//   updatedAt       DateTime @updatedAt
+//
+//   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+//
+//   @@map("gestor_ai_configs")
+// }
+//
+// model AIAnalysisLog {
+//   id            String   @id @default(cuid())
+//   userId        String
+//   feature       String   // "payment-analysis" | "debtor-priority" | "message-suggestion" | "closing-validation"
+//   provider      String   // "openai" | "local"
+//   inputHash     String   // Hash SHA256 dos dados de entrada (privacidade)
+//   suggestion    Json     // Sugestão estruturada da IA
+//   confidence    Decimal  @db.Decimal(5, 2) // 0.00 a 100.00
+//   reasoning     String?  @db.Text
+//   gestorAction  String?  // "approved" | "rejected" | "edited" | null (pendente)
+//   metadata      Json?    // Dados adicionais (tokens usados, duração, etc)
+//   createdAt     DateTime @default(now())
+//
+//   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+//
+//   @@index([userId, feature])
+//   @@index([createdAt])
+//   @@map("ai_analysis_logs")
+// }
+//
+// Adicionar ao modelo User:
+// gestorAIConfig  GestorAIConfig?
+// aiAnalysisLogs  AIAnalysisLog[]
