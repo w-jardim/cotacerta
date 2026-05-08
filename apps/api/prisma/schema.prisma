@@ -111,6 +111,7 @@ model Member {
   cashGroupId  String       @map("cash_group_id")
   userId       String?      @unique @map("user_id")
   name         String
+  cpf          String?      @map("cpf")
   phone        String?
   pixKey       String?      @map("pix_key")
   quotasCount  Int          @map("quotas_count")

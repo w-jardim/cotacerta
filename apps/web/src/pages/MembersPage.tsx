@@ -22,6 +22,23 @@ import type { CreateAccessResult } from '../features/member-access/types';
 export function MembersPage() {
   const { cashGroupId } = useParams<{ cashGroupId: string }>();
 
+  // Mask helpers
+  function maskPhone(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 10) {
+      return digits.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    return digits.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
+  }
+
+  function maskCpf(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    return digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+
   const [cashGroup, setCashGroup] = useState<CashGroup | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,6 +99,7 @@ export function MembersPage() {
     setFormData({
       cashGroupId: cashGroupId || '',
       name: '',
+      cpf: '',
       phone: '',
       pixKey: '',
       quotasCount: 1,
@@ -94,6 +112,7 @@ export function MembersPage() {
     setFormData({
       cashGroupId: member.cashGroupId,
       name: member.name,
+      cpf: member.cpf || '',
       phone: member.phone || '',
       pixKey: member.pixKey || '',
       quotasCount: member.quotasCount,
@@ -373,9 +392,22 @@ export function MembersPage() {
               label="Telefone"
               type="tel"
               value={formData.phone}
-              onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+              onChange={(event) =>
+                setFormData({ ...formData, phone: maskPhone(event.target.value) })
+              }
               placeholder="(00) 00000-0000"
               maxLength={15}
+              required
+            />
+
+            <Input
+              label="CPF (opcional)"
+              value={formData.cpf || ''}
+              onChange={(event) =>
+                setFormData({ ...formData, cpf: maskCpf(event.target.value) })
+              }
+              placeholder="000.000.000-00"
+              maxLength={14}
             />
 
             <Input
@@ -397,7 +429,7 @@ export function MembersPage() {
               required
             />
 
-            <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
+            <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
               Valor mensal estimado: R$ {(parseFloat(cashGroup.quotaValue) * formData.quotasCount).toFixed(2)}
             </div>
 
@@ -428,9 +460,22 @@ export function MembersPage() {
               label="Telefone"
               type="tel"
               value={formData.phone}
-              onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+              onChange={(event) =>
+                setFormData({ ...formData, phone: maskPhone(event.target.value) })
+              }
               placeholder="(00) 00000-0000"
               maxLength={15}
+              required
+            />
+
+            <Input
+              label="CPF (opcional)"
+              value={formData.cpf || ''}
+              onChange={(event) =>
+                setFormData({ ...formData, cpf: maskCpf(event.target.value) })
+              }
+              placeholder="000.000.000-00"
+              maxLength={14}
             />
 
             <Input
@@ -452,7 +497,7 @@ export function MembersPage() {
               required
             />
 
-            <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
+            <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
               Valor mensal estimado: R$ {(parseFloat(cashGroup.quotaValue) * formData.quotasCount).toFixed(2)}
             </div>
 

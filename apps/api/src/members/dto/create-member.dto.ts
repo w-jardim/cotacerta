@@ -20,6 +20,11 @@ export class CreateMemberDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(14, { message: 'CPF deve ter no máximo 14 caracteres' })
+  cpf?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(15, { message: 'Telefone deve ter no máximo 15 caracteres' })
   phone?: string;
 

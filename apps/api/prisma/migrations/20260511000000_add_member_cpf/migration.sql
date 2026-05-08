@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "members" ADD COLUMN IF NOT EXISTS "cpf" VARCHAR(14);

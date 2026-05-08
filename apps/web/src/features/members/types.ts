@@ -12,6 +12,7 @@ export interface Member {
   cashGroupId: string;
   userId: string | null;
   name: string;
+  cpf: string | null;
   phone: string | null;
   pixKey: string | null;
   quotasCount: number;
@@ -24,6 +25,7 @@ export interface Member {
 export interface CreateMemberData {
   cashGroupId: string;
   name: string;
+  cpf?: string;
   phone?: string;
   pixKey?: string;
   quotasCount: number;
@@ -31,6 +33,7 @@ export interface CreateMemberData {
 
 export interface UpdateMemberData {
   name?: string;
+  cpf?: string;
   phone?: string;
   pixKey?: string;
   quotasCount?: number;
