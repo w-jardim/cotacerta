@@ -15,7 +15,6 @@ export class MembersService {
   async create(userId: string, createMemberDto: CreateMemberDto) {
     const { cashGroupId, quotasCount, ...data } = createMemberDto;
 
-    // Verificar se a caixinha existe e pertence ao usuário
     const cashGroup = await this.prisma.cashGroup.findUnique({
       where: { id: cashGroupId },
     });
@@ -30,14 +29,12 @@ export class MembersService {
       );
     }
 
-    // Validar quantidade de cotas
     if (quotasCount > cashGroup.maxQuotasPerMember) {
       throw new BadRequestException(
         `Quantidade de cotas não pode exceder ${cashGroup.maxQuotasPerMember}`,
       );
     }
 
-    // Criar cotista
     return this.prisma.member.create({
       data: {
         ...data,
@@ -48,7 +45,6 @@ export class MembersService {
   }
 
   async findAll(userId: string, cashGroupId: string) {
-    // Verificar se a caixinha pertence ao usuário
     const cashGroup = await this.prisma.cashGroup.findUnique({
       where: { id: cashGroupId },
     });
@@ -67,6 +63,11 @@ export class MembersService {
       where: { cashGroupId },
       include: {
         user: { select: { id: true, email: true, status: true } },
+        profileChangeRequests: {
+          where: { status: 'PENDING' },
+          select: { id: true, createdAt: true },
+          take: 1,
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -78,6 +79,11 @@ export class MembersService {
       include: {
         cashGroup: true,
         user: { select: { id: true, email: true, status: true } },
+        profileChangeRequests: {
+          where: { status: 'PENDING' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -110,7 +116,6 @@ export class MembersService {
       );
     }
 
-    // Validar quantidade de cotas se estiver sendo alterada
     if (updateMemberDto.quotasCount !== undefined) {
       if (updateMemberDto.quotasCount > member.cashGroup.maxQuotasPerMember) {
         throw new BadRequestException(
@@ -141,7 +146,6 @@ export class MembersService {
       );
     }
 
-    // Soft delete: marcar como INACTIVE
     return this.prisma.member.update({
       where: { id },
       data: { status: 'INACTIVE' },
@@ -149,7 +153,6 @@ export class MembersService {
   }
 
   async getAllUserMembers(userId: string) {
-    // Buscar todas as caixinhas do usuário
     const cashGroups = await this.prisma.cashGroup.findMany({
       where: { ownerUserId: userId },
       select: { id: true },
@@ -157,7 +160,6 @@ export class MembersService {
 
     const cashGroupIds = cashGroups.map((cg) => cg.id);
 
-    // Buscar todos os membros dessas caixinhas
     return this.prisma.member.findMany({
       where: { cashGroupId: { in: cashGroupIds } },
       include: {
@@ -173,5 +175,106 @@ export class MembersService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async getProfileChangeRequests(userId: string) {
+    const cashGroups = await this.prisma.cashGroup.findMany({
+      where: { ownerUserId: userId },
+      select: { id: true },
+    });
+    const cashGroupIds = cashGroups.map((cg) => cg.id);
+
+    return this.prisma.memberProfileChangeRequest.findMany({
+      where: {
+        status: 'PENDING',
+        member: { cashGroupId: { in: cashGroupIds } },
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            name: true,
+            cashGroupId: true,
+            cashGroup: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async approveProfileChange(userId: string, requestId: string) {
+    const request = await this.prisma.memberProfileChangeRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        member: { include: { cashGroup: true } },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Solicitação não encontrada');
+    }
+
+    if (request.member.cashGroup.ownerUserId !== userId) {
+      throw new ForbiddenException('Sem permissão para aprovar esta solicitação');
+    }
+
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException('Esta solicitação já foi processada');
+    }
+
+    const data = request.requestedData as Record<string, any>;
+
+    await this.prisma.$transaction([
+      this.prisma.member.update({
+        where: { id: request.memberId },
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.phone !== undefined && { phone: data.phone }),
+          ...(data.pixKey !== undefined && { pixKey: data.pixKey }),
+          ...(data.cpf !== undefined && { cpf: data.cpf }),
+          ...(data.bankInstitution !== undefined && { bankInstitution: data.bankInstitution }),
+          ...(data.bankAccountHolder !== undefined && { bankAccountHolder: data.bankAccountHolder }),
+        },
+      }),
+      this.prisma.memberProfileChangeRequest.update({
+        where: { id: requestId },
+        data: { status: 'APPROVED', reviewedAt: new Date() },
+      }),
+    ]);
+
+    return { message: 'Alteração de perfil aprovada com sucesso' };
+  }
+
+  async rejectProfileChange(userId: string, requestId: string, rejectionReason?: string) {
+    const request = await this.prisma.memberProfileChangeRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        member: { include: { cashGroup: true } },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Solicitação não encontrada');
+    }
+
+    if (request.member.cashGroup.ownerUserId !== userId) {
+      throw new ForbiddenException('Sem permissão para rejeitar esta solicitação');
+    }
+
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException('Esta solicitação já foi processada');
+    }
+
+    await this.prisma.memberProfileChangeRequest.update({
+      where: { id: requestId },
+      data: {
+        status: 'REJECTED',
+        rejectionReason: rejectionReason ?? null,
+        reviewedAt: new Date(),
+      },
+    });
+
+    return { message: 'Solicitação rejeitada' };
   }
 }

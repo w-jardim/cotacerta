@@ -115,3 +115,22 @@
 - build, deploy e testes validados
 
 ✅ Status: Concluída
+
+## Fase 12A — Formas de recebimento e solicitações de pagamento
+
+- configuração por caixinha das formas de recebimento;
+- solicitação de pagamento enviada pelo cotista;
+- comprovante anexado para análise;
+- confirmação final mantida com o gestor.
+
+🟡 Status: Em andamento
+
+## Fase 12B — Pix copia e cola + QR Code
+
+- gestor habilita Pix para cotas e/ou empréstimos;
+- backend gera payload Pix BR Code sem API bancária;
+- cotista visualiza QR Code e código Pix copia e cola;
+- comprovante continua obrigatório para conferência;
+- baixa definitiva continua dependendo do gestor.
+
+🟡 Status: Em andamento

@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/api-client';
-import type { Member, CreateMemberData, UpdateMemberData } from './types';
+import type { Member, CreateMemberData, UpdateMemberData, ProfileChangeRequest } from './types';
 
 export const membersApi = {
   async create(data: CreateMemberData): Promise<Member> {
@@ -31,6 +31,21 @@ export const membersApi = {
 
   async delete(id: string): Promise<Member> {
     const response = await apiClient.delete<Member>(`/members/${id}`);
+    return response.data;
+  },
+
+  async getProfileChangeRequests(): Promise<ProfileChangeRequest[]> {
+    const response = await apiClient.get<ProfileChangeRequest[]>('/members/profile-changes');
+    return response.data;
+  },
+
+  async approveProfileChange(id: string): Promise<{ message: string }> {
+    const response = await apiClient.patch<{ message: string }>(`/members/profile-changes/${id}/approve`);
+    return response.data;
+  },
+
+  async rejectProfileChange(id: string, rejectionReason?: string): Promise<{ message: string }> {
+    const response = await apiClient.patch<{ message: string }>(`/members/profile-changes/${id}/reject`, { rejectionReason });
     return response.data;
   },
 };

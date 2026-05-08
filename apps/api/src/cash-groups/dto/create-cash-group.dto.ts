@@ -1,4 +1,14 @@
-import { IsString, IsInt, IsOptional, IsPositive, Min, Max, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsPositive,
+  Min,
+  Max,
+  IsNumber,
+  IsBoolean,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateCashGroupDto {
   @IsString({ message: 'Nome deve ser um texto' })
@@ -32,4 +42,34 @@ export class CreateCashGroupDto {
   @Min(0, { message: 'Taxa de juros não pode ser negativa' })
   @Max(100, { message: 'Taxa de juros não pode ser maior que 100' })
   defaultLoanInterestRate?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  receivingPixEnabledForCharges?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  receivingPixEnabledForLoans?: boolean;
+
+  @IsOptional()
+  @IsString()
+  receivingPixKey?: string;
+
+  @IsOptional()
+  @IsString()
+  receivingPixKeyHolder?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(15)
+  receivingPixReceiverCity?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(72)
+  receivingPixDescriptionPrefix?: string;
+
+  @IsOptional()
+  @IsString()
+  receivingInstructions?: string;
 }

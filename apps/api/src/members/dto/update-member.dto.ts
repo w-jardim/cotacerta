@@ -30,6 +30,16 @@ export class UpdateMemberDto {
   pixKey?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(100, { message: 'Instituição bancária deve ter no máximo 100 caracteres' })
+  bankInstitution?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100, { message: 'Titular da conta deve ter no máximo 100 caracteres' })
+  bankAccountHolder?: string;
+
+  @IsOptional()
   @IsInt({ message: 'Quantidade de cotas deve ser um número inteiro' })
   @Min(1, { message: 'Quantidade de cotas deve ser no mínimo 1' })
   quotasCount?: number;

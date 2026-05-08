@@ -502,3 +502,22 @@ Auditoria realizada:
 - ✅ `docs/VALIDATION.md` atualizado
 
 ✅ Status: Validada
+
+## Fase 12B — Pix copia e cola + QR Code
+
+Validações esperadas:
+
+- gestor consegue habilitar Pix separadamente para cotas e empréstimos;
+- chave Pix e nome do recebedor passam a ser obrigatórios quando Pix é habilitado;
+- backend gera payload Pix BR Code com CRC16 válido sem dependência externa;
+- endpoint de início de pagamento Pix retorna `paymentRequest` e `pix.copyPasteCode`;
+- QR Code é renderizado no frontend a partir do `copyPasteCode`;
+- comprovante continua obrigatório para envio Pix;
+- criação do Pix não baixa cobrança ou empréstimo automaticamente;
+- confirmação final continua exclusiva do gestor;
+- sem webhook Pix, sem consulta bancária e sem integração com PSP;
+- fallback de cidade do recebedor documentado como `SAO PAULO` quando não configurada.
+
+Observação importante:
+- QR Code Pix e código copia e cola não representam integração bancária.
+- A baixa definitiva ainda depende da confirmação do gestor.

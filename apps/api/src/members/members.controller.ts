@@ -16,6 +16,11 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { IsOptional, IsString } from 'class-validator';
+
+class RejectProfileChangeBodyDto {
+  @IsOptional() @IsString() rejectionReason?: string;
+}
 
 @Controller('members')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -30,11 +35,29 @@ export class MembersController {
 
   @Get()
   findAll(@Request() req, @Query('cashGroupId') cashGroupId?: string) {
-    // Se não houver cashGroupId, retorna todos os membros do usuário
     if (!cashGroupId) {
       return this.membersService.getAllUserMembers(req.user.id);
     }
     return this.membersService.findAll(req.user.id, cashGroupId);
+  }
+
+  @Get('profile-changes')
+  getProfileChangeRequests(@Request() req) {
+    return this.membersService.getProfileChangeRequests(req.user.id);
+  }
+
+  @Patch('profile-changes/:id/approve')
+  approveProfileChange(@Request() req, @Param('id') id: string) {
+    return this.membersService.approveProfileChange(req.user.id, id);
+  }
+
+  @Patch('profile-changes/:id/reject')
+  rejectProfileChange(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() body: RejectProfileChangeBodyDto,
+  ) {
+    return this.membersService.rejectProfileChange(req.user.id, id, body.rejectionReason);
   }
 
   @Get(':id')

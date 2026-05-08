@@ -47,6 +47,27 @@ enum PaymentMethod {
   PIX
 }
 
+enum PaymentRequestStatus {
+  PENDING_REVIEW
+  AUTO_MATCHED
+  NEEDS_MANUAL_REVIEW
+  MISMATCH
+  CONFIRMED
+  REJECTED
+  CANCELED
+}
+
+enum PaymentRequestType {
+  MONTHLY_CHARGE
+  LOAN
+}
+
+enum ReceivingMethod {
+  PIX
+  CASH
+  OTHER
+}
+
 enum LoanStatus {
   OPEN
   PARTIAL
@@ -75,8 +96,9 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  cashGroups   CashGroup[]
-  member       Member?
+  cashGroups          CashGroup[]
+  member              Member?
+  reviewedRequests    PaymentRequest[]
 
   @@map("users")
 }
@@ -91,6 +113,13 @@ model CashGroup {
   dueDay                  Int             @map("due_day")
   maxQuotasPerMember      Int             @default(2) @map("max_quotas_per_member")
   defaultLoanInterestRate Decimal         @default(30.00) @map("default_loan_interest_rate") @db.Decimal(5, 2)
+  receivingPixEnabledForCharges Boolean   @default(false) @map("receiving_pix_enabled_for_charges")
+  receivingPixEnabledForLoans   Boolean   @default(false) @map("receiving_pix_enabled_for_loans")
+  receivingPixKey         String?         @map("receiving_pix_key")
+  receivingPixKeyHolder   String?         @map("receiving_pix_key_holder")
+  receivingPixReceiverCity String?        @map("receiving_pix_receiver_city")
+  receivingPixDescriptionPrefix String?   @map("receiving_pix_description_prefix")
+  receivingInstructions   String?         @map("receiving_instructions")
   status                  CashGroupStatus @default(ACTIVE)
   createdAt               DateTime        @default(now()) @map("created_at")
   updatedAt               DateTime        @updatedAt @map("updated_at")
@@ -101,33 +130,61 @@ model CashGroup {
   chargePayments          ChargePayment[]
   loans                   Loan[]
   annualClosings          AnnualClosing[]
+  paymentRequests         PaymentRequest[]
 
   @@index([ownerUserId])
   @@map("cash_groups")
 }
 
 model Member {
-  id           String       @id @default(cuid())
-  cashGroupId  String       @map("cash_group_id")
-  userId       String?      @unique @map("user_id")
-  name         String
-  cpf          String?      @map("cpf")
-  phone        String?
-  pixKey       String?      @map("pix_key")
-  quotasCount  Int          @map("quotas_count")
-  status       MemberStatus @default(ACTIVE)
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
+  id                 String       @id @default(cuid())
+  cashGroupId        String       @map("cash_group_id")
+  userId             String?      @unique @map("user_id")
+  name               String
+  cpf                String?      @map("cpf")
+  phone              String?
+  pixKey             String?      @map("pix_key")
+  bankInstitution    String?      @map("bank_institution")
+  bankAccountHolder  String?      @map("bank_account_holder")
+  quotasCount        Int          @map("quotas_count")
+  status             MemberStatus @default(ACTIVE)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
 
-  cashGroup    CashGroup    @relation(fields: [cashGroupId], references: [id])
-  user         User?        @relation(fields: [userId], references: [id])
-  monthlyCharges MonthlyCharge[]
-  chargePayments ChargePayment[]
-  loans         Loan[]
+  cashGroup           CashGroup    @relation(fields: [cashGroupId], references: [id])
+  user                User?        @relation(fields: [userId], references: [id])
+  monthlyCharges      MonthlyCharge[]
+  chargePayments      ChargePayment[]
+  loans               Loan[]
   annualClosingResults AnnualClosingMemberResult[]
+  profileChangeRequests MemberProfileChangeRequest[]
+  paymentRequests     PaymentRequest[]
 
   @@index([cashGroupId])
   @@map("members")
+}
+
+enum ProfileChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model MemberProfileChangeRequest {
+  id              String              @id @default(cuid())
+  memberId        String              @map("member_id")
+  requestedData   Json                @map("requested_data")
+  status          ProfileChangeStatus @default(PENDING)
+  rejectionReason String?             @map("rejection_reason")
+  reviewedAt      DateTime?           @map("reviewed_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  member          Member              @relation(fields: [memberId], references: [id])
+
+  @@index([memberId])
+  @@index([status])
+  @@map("member_profile_change_requests")
 }
 
 model MonthlyCharge {
@@ -149,6 +206,7 @@ model MonthlyCharge {
   cashGroup       CashGroup           @relation(fields: [cashGroupId], references: [id])
   member          Member              @relation(fields: [memberId], references: [id])
   payments        ChargePayment[]
+  paymentRequests PaymentRequest[]
 
   @@unique([cashGroupId, memberId, referenceMonth, referenceYear])
   @@index([cashGroupId])
@@ -213,6 +271,7 @@ model Loan {
   cashGroup       CashGroup     @relation(fields: [cashGroupId], references: [id])
   member          Member        @relation(fields: [memberId], references: [id])
   payments        LoanPayment[]
+  paymentRequests PaymentRequest[]
 
   @@index([cashGroupId])
   @@index([memberId])
@@ -241,6 +300,56 @@ enum AnnualClosingStatus {
   SIMULATED
   CONFIRMED
   CANCELED
+}
+
+model PaymentRequest {
+  id               String               @id @default(cuid())
+  cashGroupId      String               @map("cash_group_id")
+  memberId         String               @map("member_id")
+  type             PaymentRequestType
+  monthlyChargeId  String?              @map("monthly_charge_id")
+  loanId           String?              @map("loan_id")
+  method           ReceivingMethod
+  amountDeclared   Decimal              @map("amount_declared") @db.Decimal(10, 2)
+  receiptFileName  String?              @map("receipt_file_name")
+  receiptMimeType  String?              @map("receipt_mime_type")
+  receiptDataUrl   String?              @map("receipt_data_url")
+  notes            String?
+  status           PaymentRequestStatus @default(PENDING_REVIEW)
+  reviewedByUserId String?              @map("reviewed_by_user_id")
+  reviewedAt       DateTime?            @map("reviewed_at")
+  reviewNotes      String?              @map("review_notes")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  cashGroup        CashGroup            @relation(fields: [cashGroupId], references: [id])
+  member           Member               @relation(fields: [memberId], references: [id])
+  monthlyCharge    MonthlyCharge?       @relation(fields: [monthlyChargeId], references: [id])
+  loan             Loan?                @relation(fields: [loanId], references: [id])
+  reviewedBy       User?                @relation(fields: [reviewedByUserId], references: [id])
+  pixPayload       PixPaymentPayload?
+
+  @@index([cashGroupId])
+  @@index([memberId])
+  @@index([status])
+  @@map("payment_requests")
+}
+
+model PixPaymentPayload {
+  id               String         @id @default(cuid())
+  paymentRequestId String         @unique @map("payment_request_id")
+  pixKey           String         @map("pix_key")
+  receiverName     String         @map("receiver_name")
+  receiverCity     String         @map("receiver_city")
+  amount           Decimal        @db.Decimal(10, 2)
+  description      String?
+  txid             String?
+  copyPasteCode    String         @map("copy_paste_code")
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  paymentRequest   PaymentRequest @relation(fields: [paymentRequestId], references: [id])
+
+  @@map("pix_payment_payloads")
 }
 
 model AnnualClosing {

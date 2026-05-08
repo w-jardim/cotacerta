@@ -38,6 +38,13 @@ export function CashGroupsPage() {
     dueDay: 10,
     maxQuotasPerMember: 2,
     defaultLoanInterestRate: 30,
+    receivingPixEnabledForCharges: false,
+    receivingPixEnabledForLoans: false,
+    receivingPixKey: '',
+    receivingPixKeyHolder: '',
+    receivingPixReceiverCity: '',
+    receivingPixDescriptionPrefix: '',
+    receivingInstructions: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -79,6 +86,13 @@ export function CashGroupsPage() {
       dueDay: 10,
       maxQuotasPerMember: 2,
       defaultLoanInterestRate: 30,
+      receivingPixEnabledForCharges: false,
+      receivingPixEnabledForLoans: false,
+      receivingPixKey: '',
+      receivingPixKeyHolder: '',
+      receivingPixReceiverCity: '',
+      receivingPixDescriptionPrefix: '',
+      receivingInstructions: '',
     });
   }
 
@@ -97,6 +111,13 @@ export function CashGroupsPage() {
       dueDay: cashGroup.dueDay,
       maxQuotasPerMember: cashGroup.maxQuotasPerMember,
       defaultLoanInterestRate: parseFloat(cashGroup.defaultLoanInterestRate),
+      receivingPixEnabledForCharges: cashGroup.receivingPixEnabledForCharges,
+      receivingPixEnabledForLoans: cashGroup.receivingPixEnabledForLoans,
+      receivingPixKey: cashGroup.receivingPixKey || '',
+      receivingPixKeyHolder: cashGroup.receivingPixKeyHolder || '',
+      receivingPixReceiverCity: cashGroup.receivingPixReceiverCity || '',
+      receivingPixDescriptionPrefix: cashGroup.receivingPixDescriptionPrefix || '',
+      receivingInstructions: cashGroup.receivingInstructions || '',
     });
     setIsEditModalOpen(true);
   }
@@ -140,6 +161,14 @@ export function CashGroupsPage() {
         dueDay: formData.dueDay,
         maxQuotasPerMember: formData.maxQuotasPerMember,
         defaultLoanInterestRate: formData.defaultLoanInterestRate,
+        receivingPixEnabledForCharges: formData.receivingPixEnabledForCharges,
+        receivingPixEnabledForLoans: formData.receivingPixEnabledForLoans,
+        receivingPixKey: formData.receivingPixKey || undefined,
+        receivingPixKeyHolder: formData.receivingPixKeyHolder || undefined,
+        receivingPixReceiverCity: formData.receivingPixReceiverCity || undefined,
+        receivingPixDescriptionPrefix:
+          formData.receivingPixDescriptionPrefix || undefined,
+        receivingInstructions: formData.receivingInstructions || undefined,
       };
 
       await cashGroupsApi.update(editingCashGroup.id, updateData);
@@ -165,7 +194,7 @@ export function CashGroupsPage() {
 
   async function handleDelete(cashGroup: CashGroup) {
     const confirmed = window.confirm(
-      `Tem certeza que deseja arquivar a caixinha "${cashGroup.name}"?\n\nEsta ação não pode ser desfeita.`,
+      `Tem certeza que deseja arquivar a caixinha "${cashGroup.name}"?\n\nEsta ação pode ser desfeita posteriormente.`,
     );
 
     if (!confirmed) return;
@@ -175,6 +204,21 @@ export function CashGroupsPage() {
       await loadCashGroups();
     } catch {
       setError('Erro ao arquivar caixinha');
+    }
+  }
+
+  async function handleRestore(cashGroup: CashGroup) {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja desarquivar a caixinha "${cashGroup.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await cashGroupsApi.restore(cashGroup.id);
+      await loadCashGroups();
+    } catch {
+      setError('Erro ao desarquivar caixinha');
     }
   }
 
@@ -191,6 +235,7 @@ export function CashGroupsPage() {
 
   const activeCount = cashGroups.filter((group) => group.status === 'ACTIVE').length;
   const pausedCount = cashGroups.filter((group) => group.status === 'PAUSED').length;
+  const archivedCount = cashGroups.filter((group) => group.status === 'ARCHIVED').length;
 
   return (
     <AuthenticatedLayout>
@@ -207,10 +252,11 @@ export function CashGroupsPage() {
 
         {error && !isCreateModalOpen && !isEditModalOpen && <Alert variant="error">{error}</Alert>}
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <StatCard tone="brand" value={cashGroups.length} label="Total de caixinhas" />
           <StatCard tone="success" value={activeCount} label="Caixinhas ativas" />
           <StatCard tone="warning" value={pausedCount} label="Caixinhas pausadas" />
+          <StatCard tone="neutral" value={archivedCount} label="Caixinhas arquivadas" />
         </div>
 
         {isLoading && (
@@ -288,6 +334,28 @@ export function CashGroupsPage() {
                     </div>
                   </div>
 
+                  {(cashGroup.receivingPixEnabledForCharges ||
+                    cashGroup.receivingPixEnabledForLoans) && (
+                    <div className="mx-5 mt-3 rounded-xl border border-teal-100 bg-teal-50 px-3 py-3 text-xs text-teal-900">
+                      <p className="font-semibold uppercase tracking-wide text-teal-700">
+                        Pix configurado
+                      </p>
+                      <p className="mt-1">
+                        {cashGroup.receivingPixEnabledForCharges ? 'Cotas' : ''}
+                        {cashGroup.receivingPixEnabledForCharges &&
+                        cashGroup.receivingPixEnabledForLoans
+                          ? ' e '
+                          : ''}
+                        {cashGroup.receivingPixEnabledForLoans ? 'Empréstimos' : ''}
+                      </p>
+                      {cashGroup.receivingPixKey && (
+                        <p className="mt-1 font-mono text-[11px] text-slate-700">
+                          {cashGroup.receivingPixKey}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Primary actions */}
                   <div className="flex gap-2 px-5 pt-4">
                     <button
@@ -345,6 +413,15 @@ export function CashGroupsPage() {
                         className="ml-auto rounded-md px-3 py-1.5 text-xs font-semibold text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
                       >
                         Arquivar
+                      </button>
+                    )}
+                    {cashGroup.status === 'ARCHIVED' && (
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(cashGroup)}
+                        className="ml-auto rounded-md px-3 py-1.5 text-xs font-semibold text-teal-600 transition hover:bg-teal-50 hover:text-teal-800"
+                      >
+                        Desarquivar
                       </button>
                     )}
                   </div>
@@ -432,6 +509,94 @@ export function CashGroupsPage() {
               max={100}
             />
 
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Formas de recebimento</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Você pode configurar depois. Esses dados serão usados para gerar o Pix copia e cola e o QR Code para o cotista.
+                </p>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.receivingPixEnabledForCharges)}
+                  onChange={(event) =>
+                    setFormData({
+                      ...formData,
+                      receivingPixEnabledForCharges: event.target.checked,
+                    })
+                  }
+                />
+                Aceitar Pix para cotas
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.receivingPixEnabledForLoans)}
+                  onChange={(event) =>
+                    setFormData({
+                      ...formData,
+                      receivingPixEnabledForLoans: event.target.checked,
+                    })
+                  }
+                />
+                Aceitar Pix para empréstimos
+              </label>
+              <Input
+                label="Chave Pix"
+                value={formData.receivingPixKey || ''}
+                onChange={(event) =>
+                  setFormData({ ...formData, receivingPixKey: event.target.value })
+                }
+                placeholder="CPF, telefone, email ou chave aleatória"
+              />
+              <Input
+                label="Nome do recebedor"
+                value={formData.receivingPixKeyHolder || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingPixKeyHolder: event.target.value,
+                  })
+                }
+                placeholder="Nome que aparece no Pix"
+              />
+              <Input
+                label="Cidade do recebedor"
+                value={formData.receivingPixReceiverCity || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingPixReceiverCity: event.target.value,
+                  })
+                }
+                placeholder="Ex: Rio de Janeiro"
+              />
+              <Input
+                label="Descrição padrão do Pix"
+                value={formData.receivingPixDescriptionPrefix || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingPixDescriptionPrefix: event.target.value,
+                  })
+                }
+                placeholder="Ex: CotaCerta"
+              />
+              <Textarea
+                label="Instruções manuais"
+                rows={3}
+                value={formData.receivingInstructions || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingInstructions: event.target.value,
+                  })
+                }
+                placeholder="Orientações para dinheiro ou outros combinados"
+              />
+            </div>
+
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="secondary" onClick={closeModals} className="flex-1" disabled={isSubmitting}>
                 Cancelar
@@ -506,8 +671,104 @@ export function CashGroupsPage() {
                 }
                 required
                 min={0}
-                max={100}
+              max={100}
+            />
+
+            <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Formas de recebimento</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Esses dados serão usados para gerar o Pix copia e cola e o QR Code para o cotista.
+                </p>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.receivingPixEnabledForCharges)}
+                  onChange={(event) =>
+                    setFormData({
+                      ...formData,
+                      receivingPixEnabledForCharges: event.target.checked,
+                    })
+                  }
+                />
+                Aceitar Pix para cotas
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.receivingPixEnabledForLoans)}
+                  onChange={(event) =>
+                    setFormData({
+                      ...formData,
+                      receivingPixEnabledForLoans: event.target.checked,
+                    })
+                  }
+                />
+                Aceitar Pix para empréstimos
+              </label>
+              <Input
+                label="Chave Pix"
+                value={formData.receivingPixKey || ''}
+                onChange={(event) =>
+                  setFormData({ ...formData, receivingPixKey: event.target.value })
+                }
+                placeholder="CPF, telefone, email ou chave aleatória"
+                required={
+                  Boolean(formData.receivingPixEnabledForCharges) ||
+                  Boolean(formData.receivingPixEnabledForLoans)
+                }
               />
+              <Input
+                label="Nome do recebedor"
+                value={formData.receivingPixKeyHolder || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingPixKeyHolder: event.target.value,
+                  })
+                }
+                placeholder="Nome que aparece no Pix"
+                required={
+                  Boolean(formData.receivingPixEnabledForCharges) ||
+                  Boolean(formData.receivingPixEnabledForLoans)
+                }
+              />
+              <Input
+                label="Cidade do recebedor"
+                value={formData.receivingPixReceiverCity || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingPixReceiverCity: event.target.value,
+                  })
+                }
+                placeholder="Ex: Rio de Janeiro"
+              />
+              <Input
+                label="Descrição padrão do Pix"
+                value={formData.receivingPixDescriptionPrefix || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingPixDescriptionPrefix: event.target.value,
+                  })
+                }
+                placeholder="Ex: CotaCerta"
+              />
+              <Textarea
+                label="Instruções manuais"
+                rows={3}
+                value={formData.receivingInstructions || ''}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    receivingInstructions: event.target.value,
+                  })
+                }
+                placeholder="Orientações para dinheiro ou outros combinados"
+              />
+            </div>
             </div>
 
             <div className="flex gap-3 pt-2">

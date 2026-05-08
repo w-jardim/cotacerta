@@ -114,6 +114,24 @@
 - [ ] Cotista não consegue acessar dashboard do gestor
 - [ ] Gestor não consegue acessar painel do cotista
 
+## 10.1 Pix copia e cola + QR Code
+
+- [ ] Gestor habilita Pix para cotas na edição da caixinha
+- [ ] Gestor habilita Pix para empréstimos na edição da caixinha
+- [ ] Gestor informa chave Pix, nome do recebedor e cidade
+- [ ] Cotista abre uma cobrança pendente e clica em `Pagar cota`
+- [ ] Sistema gera QR Code Pix sem integração bancária
+- [ ] Sistema mostra código Pix copia e cola
+- [ ] Botão `Copiar código Pix` funciona
+- [ ] Cotista anexa comprovante e envia para conferência
+- [ ] Solicitação continua aguardando confirmação do gestor
+- [ ] Cobrança não muda para paga automaticamente
+- [ ] Fluxo equivalente funciona para empréstimo
+
+Observação obrigatória:
+- QR Code Pix e copia e cola não representam integração bancária.
+- A baixa definitiva ainda depende da confirmação do gestor.
+
 ---
 
 ## 11. Isolamento de dados

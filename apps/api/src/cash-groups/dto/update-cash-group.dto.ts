@@ -1,4 +1,15 @@
-import { IsString, IsInt, IsOptional, IsPositive, Min, Max, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsPositive,
+  Min,
+  Max,
+  IsNumber,
+  IsEnum,
+  IsBoolean,
+  MaxLength,
+} from 'class-validator';
 import { CashGroupStatus } from '@prisma/client';
 
 export class UpdateCashGroupDto {
@@ -36,4 +47,34 @@ export class UpdateCashGroupDto {
   @IsOptional()
   @IsEnum(CashGroupStatus, { message: 'Status inválido' })
   status?: CashGroupStatus;
+
+  @IsOptional()
+  @IsString()
+  receivingPixKey?: string;
+
+  @IsOptional()
+  @IsString()
+  receivingPixKeyHolder?: string;
+
+  @IsOptional()
+  @MaxLength(15)
+  @IsString()
+  receivingPixReceiverCity?: string;
+
+  @IsOptional()
+  @MaxLength(72)
+  @IsString()
+  receivingPixDescriptionPrefix?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  receivingPixEnabledForCharges?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  receivingPixEnabledForLoans?: boolean;
+
+  @IsOptional()
+  @IsString()
+  receivingInstructions?: string;
 }
