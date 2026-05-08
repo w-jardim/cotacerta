@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { PageHeader } from '../components/ui/PageHeader';
+import { StatCard } from '../components/ui/StatCard';
 import { Select } from '../components/ui/Select';
 import { loansApi } from '../features/loans/api';
 import type { Loan, LoanStatus, LoansSummary } from '../features/loans/types';
@@ -94,22 +95,10 @@ export function LoansListPage() {
 
         {summary && (
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="p-6">
-              <p className="text-3xl font-extrabold text-slate-950">{formatCurrency(summary.totalPrincipal)}</p>
-              <p className="mt-2 text-sm text-slate-600">Total emprestado</p>
-            </Card>
-            <Card className="p-6">
-              <p className="text-3xl font-extrabold text-slate-950">{formatCurrency(summary.totalDue)}</p>
-              <p className="mt-2 text-sm text-slate-600">Total previsto</p>
-            </Card>
-            <Card className="p-6">
-              <p className="text-3xl font-extrabold text-slate-950">{formatCurrency(summary.totalPaid)}</p>
-              <p className="mt-2 text-sm text-slate-600">Total recebido</p>
-            </Card>
-            <Card className="p-6">
-              <p className="text-3xl font-extrabold text-slate-950">{formatCurrency(summary.totalOpen)}</p>
-              <p className="mt-2 text-sm text-slate-600">Saldo em aberto</p>
-            </Card>
+            <StatCard tone="brand" value={formatCurrency(summary.totalPrincipal)} label="Total emprestado" />
+            <StatCard tone="success" value={formatCurrency(summary.totalDue)} label="Total previsto" />
+            <StatCard tone="warning" value={formatCurrency(summary.totalPaid)} label="Total recebido" />
+            <StatCard tone="danger" value={formatCurrency(summary.totalOpen)} label="Saldo em aberto" />
           </div>
         )}
 
