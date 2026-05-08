@@ -127,6 +127,11 @@ export class CashGroupsController {
     );
   }
 
+  @Get(':groupId/ledger')
+  getLedger(@Request() req, @Param('groupId') groupId: string) {
+    return this.cashGroupsService.getLedger(groupId, req.user.id);
+  }
+
   @Post(':groupId/payment-requests/:requestId/reject')
   rejectPaymentRequest(
     @Request() req,

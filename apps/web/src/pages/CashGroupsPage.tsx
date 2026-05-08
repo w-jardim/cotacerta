@@ -385,6 +385,13 @@ export function CashGroupsPage() {
                   <div className="mt-3 flex items-center gap-1 border-t border-slate-100 px-4 py-3">
                     <button
                       type="button"
+                      onClick={() => navigate(`/caixinhas/${cashGroup.id}/extrato`)}
+                      className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      Extrato
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => navigate(`/caixinhas/${cashGroup.id}/fechamento`)}
                       className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                     >

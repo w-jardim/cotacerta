@@ -162,6 +162,26 @@ export interface AdminPaymentRequest {
   reviewedBy: { id: string; name: string } | null;
 }
 
+export interface LedgerEntry {
+  id: string;
+  type: 'ENTRADA' | 'SAIDA';
+  category: 'COTA_PAGA' | 'EMPRESTIMO_CONCEDIDO' | 'PAGAMENTO_EMPRESTIMO';
+  amount: string;
+  date: string;
+  memberName: string;
+  description: string;
+}
+
+export interface LedgerResponse {
+  cashGroupId: string;
+  summary: {
+    totalEntradas: string;
+    totalSaidas: string;
+    saldo: string;
+  };
+  entries: LedgerEntry[];
+}
+
 export interface PaymentRequestAnalysisResponse {
   paymentRequestId: string;
   requestStatus: AdminPaymentRequestStatus;

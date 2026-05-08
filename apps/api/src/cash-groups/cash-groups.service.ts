@@ -548,6 +548,85 @@ export class CashGroupsService {
     };
   }
 
+  async getLedger(groupId: string, userId: string) {
+    await this.findOne(groupId, userId);
+
+    const MONTH_NAMES = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    const [chargePayments, loans, loanPayments] = await Promise.all([
+      this.prisma.chargePayment.findMany({
+        where: { cashGroupId: groupId },
+        include: {
+          member: { select: { name: true } },
+          monthlyCharge: { select: { referenceMonth: true, referenceYear: true } },
+        },
+        orderBy: { paidAt: 'desc' },
+      }),
+      this.prisma.loan.findMany({
+        where: { cashGroupId: groupId },
+        include: { member: { select: { name: true } } },
+        orderBy: { grantedAt: 'desc' },
+      }),
+      this.prisma.loanPayment.findMany({
+        where: { loan: { cashGroupId: groupId } },
+        include: {
+          loan: {
+            include: { member: { select: { name: true } } },
+          },
+        },
+        orderBy: { paidAt: 'desc' },
+      }),
+    ]);
+
+    const entries = [
+      ...chargePayments.map((p) => ({
+        id: p.id,
+        type: 'ENTRADA' as const,
+        category: 'COTA_PAGA' as const,
+        amount: Number(p.amountPaid).toFixed(2),
+        date: p.paidAt.toISOString(),
+        memberName: p.member.name,
+        description: `Cota ${MONTH_NAMES[p.monthlyCharge.referenceMonth]}/${p.monthlyCharge.referenceYear}`,
+      })),
+      ...loans.map((l) => ({
+        id: l.id,
+        type: 'SAIDA' as const,
+        category: 'EMPRESTIMO_CONCEDIDO' as const,
+        amount: Number(l.principalAmount).toFixed(2),
+        date: l.grantedAt.toISOString(),
+        memberName: l.member.name,
+        description: 'Empr\u00e9stimo concedido',
+      })),
+      ...loanPayments.map((p) => ({
+        id: p.id,
+        type: 'ENTRADA' as const,
+        category: 'PAGAMENTO_EMPRESTIMO' as const,
+        amount: Number(p.amount).toFixed(2),
+        date: p.paidAt.toISOString(),
+        memberName: p.loan.member.name,
+        description: 'Pagamento de empr\u00e9stimo',
+      })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const totalEntradas = entries
+      .filter((e) => e.type === 'ENTRADA')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
+    const totalSaidas = entries
+      .filter((e) => e.type === 'SAIDA')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
+    return {
+      cashGroupId: groupId,
+      summary: {
+        totalEntradas: totalEntradas.toFixed(2),
+        totalSaidas: totalSaidas.toFixed(2),
+        saldo: (totalEntradas - totalSaidas).toFixed(2),
+      },
+      entries,
+    };
+  }
+
   private normalizeReviewText(value: string) {
     return value
       .normalize('NFD')

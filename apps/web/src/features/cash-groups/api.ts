@@ -6,6 +6,7 @@ import type {
   AdminPaymentRequest,
   ReceivingSettings,
   PaymentRequestAnalysisResponse,
+  LedgerResponse,
 } from './types';
 
 export const cashGroupsApi = {
@@ -97,6 +98,11 @@ export const cashGroupsApi = {
       `/cash-groups/${groupId}/payment-requests/${requestId}/reject`,
       { reviewNotes },
     );
+    return response.data;
+  },
+
+  async getLedger(groupId: string): Promise<LedgerResponse> {
+    const response = await apiClient.get<LedgerResponse>(`/cash-groups/${groupId}/ledger`);
     return response.data;
   },
 };
