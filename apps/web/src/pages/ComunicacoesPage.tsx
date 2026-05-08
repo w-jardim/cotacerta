@@ -3,7 +3,6 @@ import { AuthenticatedLayout } from '../components/layout/AuthenticatedLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
-import { Modal } from '../components/ui/Modal';
 import { communicationsApi } from '../features/communications/api';
 import type { CommunicationMessage } from '../features/communications/types';
 
