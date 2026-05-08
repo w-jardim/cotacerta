@@ -86,6 +86,32 @@ export class CashGroupsController {
     return this.cashGroupsService.getPaymentRequests(groupId, req.user.id);
   }
 
+  @Get(':groupId/payment-requests/:requestId/analysis')
+  getPaymentRequestAnalysis(
+    @Request() req,
+    @Param('groupId') groupId: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.cashGroupsService.getPaymentRequestAnalysis(
+      groupId,
+      requestId,
+      req.user.id,
+    );
+  }
+
+  @Post(':groupId/payment-requests/:requestId/analyze')
+  analyzePaymentRequest(
+    @Request() req,
+    @Param('groupId') groupId: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.cashGroupsService.analyzePaymentRequest(
+      groupId,
+      requestId,
+      req.user.id,
+    );
+  }
+
   @Post(':groupId/payment-requests/:requestId/confirm')
   confirmPaymentRequest(
     @Request() req,

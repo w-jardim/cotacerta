@@ -8,10 +8,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCashGroupDto } from './dto/create-cash-group.dto';
 import { UpdateCashGroupDto } from './dto/update-cash-group.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PaymentRequestAnalysisService } from '../payment-requests/payment-request-analysis.service';
 
 @Injectable()
 export class CashGroupsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly paymentRequestAnalysisService: PaymentRequestAnalysisService,
+  ) {}
 
   async create(userId: string, createDto: CreateCashGroupDto) {
     this.validateReceivingSettings(createDto as Record<string, any>, createDto);
@@ -205,6 +209,7 @@ export class CashGroupsService {
         },
         reviewedBy: { select: { id: true, name: true } },
         pixPayload: true,
+        analysis: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -212,6 +217,60 @@ export class CashGroupsService {
     return requests.map((request) =>
       this.attachReviewSummary(request, cashGroup),
     );
+  }
+
+  async getPaymentRequestAnalysis(
+    groupId: string,
+    requestId: string,
+    userId: string,
+  ) {
+    await this.findOne(groupId, userId);
+
+    const request = await this.prisma.paymentRequest.findFirst({
+      where: { id: requestId, cashGroupId: groupId },
+      select: { id: true },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Solicitação não encontrada.');
+    }
+
+    return this.paymentRequestAnalysisService.getAnalysisOrThrow(request.id);
+  }
+
+  async analyzePaymentRequest(
+    groupId: string,
+    requestId: string,
+    userId: string,
+  ) {
+    await this.findOne(groupId, userId);
+
+    const request = await this.prisma.paymentRequest.findFirst({
+      where: { id: requestId, cashGroupId: groupId },
+      select: {
+        id: true,
+        status: true,
+        receiptDataUrl: true,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Solicitação não encontrada.');
+    }
+
+    if (!request.receiptDataUrl) {
+      throw new BadRequestException(
+        'O comprovante precisa existir antes da análise.',
+      );
+    }
+
+    if (request.status === 'CONFIRMED' || request.status === 'REJECTED') {
+      throw new BadRequestException(
+        `Solicitações com status "${request.status}" não podem ser reprocessadas nesta fase.`,
+      );
+    }
+
+    return this.paymentRequestAnalysisService.analyzePaymentRequest(request.id);
   }
 
   async confirmPaymentRequest(
@@ -467,6 +526,11 @@ export class CashGroupsService {
 
     return {
       ...request,
+      analysis: request.analysis
+        ? this.paymentRequestAnalysisService.serializeAnalysisRecord(
+            request.analysis,
+          )
+        : null,
       reviewSummary: {
         expectedAmount:
           expectedAmount == null ? null : expectedAmount.toFixed(2),

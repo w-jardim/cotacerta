@@ -29,8 +29,8 @@ const MONTH_NAMES = [
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_REVIEW: 'Aguardando análise',
-  AUTO_MATCHED: 'Pré-validado',
-  NEEDS_MANUAL_REVIEW: 'Conferência manual',
+  AUTO_MATCHED: 'Compatível',
+  NEEDS_MANUAL_REVIEW: 'Precisa revisão',
   MISMATCH: 'Divergência encontrada',
   CONFIRMED: 'Confirmado',
   REJECTED: 'Rejeitado',
@@ -64,6 +64,26 @@ function statusTone(status: string): 'success' | 'warning' | 'danger' | 'neutral
   if (status === 'REJECTED' || status === 'MISMATCH') return 'danger';
   if (status === 'PENDING_REVIEW' || status === 'AUTO_MATCHED' || status === 'NEEDS_MANUAL_REVIEW') return 'warning';
   return 'neutral';
+}
+
+function getMemberPaymentStatusMessage(status: string) {
+  if (status === 'AUTO_MATCHED') {
+    return 'Comprovante recebido. Os dados parecem compatíveis. Aguardando confirmação final do gestor.';
+  }
+
+  if (status === 'MISMATCH') {
+    return 'Comprovante recebido, mas o sistema encontrou uma possível divergência. Aguarde a análise do gestor.';
+  }
+
+  if (status === 'CONFIRMED') {
+    return 'Pagamento confirmado pelo gestor.';
+  }
+
+  if (status === 'REJECTED') {
+    return 'Solicitação rejeitada pelo gestor.';
+  }
+
+  return 'Comprovante recebido. O gestor fará a conferência manual.';
 }
 
 export function MemberPortalPage() {
@@ -100,6 +120,7 @@ export function MemberPortalPage() {
     | null
   >(null);
   const [payMethod, setPayMethod] = useState<ReceivingMethod>('PIX');
+  const [loanPaymentScope, setLoanPaymentScope] = useState<'FULL' | 'INTEREST_ONLY'>('FULL');
   const [payAmount, setPayAmount] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [payRefMonth, setPayRefMonth] = useState(new Date().getMonth() + 1);
@@ -209,6 +230,7 @@ export function MemberPortalPage() {
     setReceiptFile(null);
     setPixSession(null);
     setCopyFeedback('');
+    setLoanPaymentScope('FULL');
     setPayError('');
     setPaySuccess('');
 
@@ -217,9 +239,7 @@ export function MemberPortalPage() {
         parseFloat(target.charge.amountDue) - parseFloat(target.charge.amountPaid);
       setPayAmount(remaining.toFixed(2));
     } else if (target.type === 'LOAN') {
-      const remaining =
-        parseFloat(target.loan.totalDue) - parseFloat(target.loan.amountPaid);
-      setPayAmount(remaining.toFixed(2));
+      setPayAmount(parseFloat(target.loan.remainingAmount).toFixed(2));
     } else {
       setPayAmount('');
       setPayRefMonth(new Date().getMonth() + 1);
@@ -274,6 +294,7 @@ export function MemberPortalPage() {
                 })
               : await memberPortalApi.startLoanPixPayment(payTarget.loan.id, {
                   method: 'PIX',
+                  paymentScope: loanPaymentScope,
                 });
 
           setPixSession(result);
@@ -362,7 +383,11 @@ export function MemberPortalPage() {
   if (!member) return null;
 
   const pendingPayRequests = paymentRequests.filter(
-    (r) => r.status === 'PENDING_REVIEW' || r.status === 'AUTO_MATCHED' || r.status === 'NEEDS_MANUAL_REVIEW',
+    (r) =>
+      r.status === 'PENDING_REVIEW' ||
+      r.status === 'AUTO_MATCHED' ||
+      r.status === 'NEEDS_MANUAL_REVIEW' ||
+      r.status === 'MISMATCH',
   );
 
   const cashGroup = member.cashGroup as any;
@@ -372,6 +397,13 @@ export function MemberPortalPage() {
       : payTarget?.type === 'LOAN'
         ? Boolean(cashGroup.receivingPixEnabledForLoans)
         : Boolean(cashGroup.receivingPixEnabledForCharges);
+
+  const selectedLoanSuggestedAmount =
+    payTarget?.type === 'LOAN'
+      ? loanPaymentScope === 'INTEREST_ONLY'
+        ? parseFloat(payTarget.loan.interestRemainingAmount)
+        : parseFloat(payTarget.loan.remainingAmount)
+      : null;
 
   return (
     <MemberPortalLayout>
@@ -446,7 +478,12 @@ export function MemberPortalPage() {
                       (r) =>
                         r.monthlyCharge?.referenceMonth === charge.referenceMonth &&
                         r.monthlyCharge?.referenceYear === charge.referenceYear &&
-                        (r.status === 'PENDING_REVIEW' || r.status === 'AUTO_MATCHED' || r.status === 'NEEDS_MANUAL_REVIEW'),
+                        (
+                          r.status === 'PENDING_REVIEW' ||
+                          r.status === 'AUTO_MATCHED' ||
+                          r.status === 'NEEDS_MANUAL_REVIEW' ||
+                          r.status === 'MISMATCH'
+                        ),
                     );
                     const canPay = charge.status !== 'PAID' && charge.status !== 'CANCELED' && !hasPending;
 
@@ -521,7 +558,12 @@ export function MemberPortalPage() {
                       (r) =>
                         r.loan?.id === loan.id &&
                         r.type === 'LOAN' &&
-                        (r.status === 'PENDING_REVIEW' || r.status === 'AUTO_MATCHED' || r.status === 'NEEDS_MANUAL_REVIEW'),
+                        (
+                          r.status === 'PENDING_REVIEW' ||
+                          r.status === 'AUTO_MATCHED' ||
+                          r.status === 'NEEDS_MANUAL_REVIEW' ||
+                          r.status === 'MISMATCH'
+                        ),
                     );
                     const canPay = loan.status !== 'PAID' && loan.status !== 'CANCELED' && !hasPending;
 
@@ -601,6 +643,16 @@ export function MemberPortalPage() {
                       {req.reviewNotes && (
                         <p className="mt-1 text-xs text-slate-500 italic">{req.reviewNotes}</p>
                       )}
+                      <p className="mt-2 text-xs text-slate-500">
+                        {getMemberPaymentStatusMessage(req.status)}
+                      </p>
+                      {req.analysis?.issues?.length ? (
+                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                          {req.analysis.issues.map((issue) => (
+                            <p key={issue}>{issue}</p>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -766,6 +818,59 @@ export function MemberPortalPage() {
                 </div>
 
                 {/* Instruções de pagamento */}
+                {payTarget?.type === 'LOAN' && (
+                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-800">
+                      Como deseja pagar este empréstimo?
+                    </p>
+                    <div className="grid gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoanPaymentScope('FULL');
+                          setPixSession(null);
+                          setPayAmount(
+                            parseFloat(payTarget.loan.remainingAmount).toFixed(2),
+                          );
+                        }}
+                        className={`rounded-lg border px-3 py-3 text-left text-sm ${
+                          loanPaymentScope === 'FULL'
+                            ? 'border-teal-600 bg-teal-50 text-teal-900'
+                            : 'border-slate-200 bg-white text-slate-700'
+                        }`}
+                      >
+                        <p className="font-semibold">Pagar integralmente</p>
+                        <p className="text-xs text-slate-500">
+                          Paga todo o valor que ainda falta neste empréstimo: R$ {parseFloat(payTarget.loan.remainingAmount).toFixed(2)}
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoanPaymentScope('INTEREST_ONLY');
+                          setPixSession(null);
+                          setPayAmount(
+                            parseFloat(
+                              payTarget.loan.interestRemainingAmount,
+                            ).toFixed(2),
+                          );
+                        }}
+                        disabled={parseFloat(payTarget.loan.interestRemainingAmount) <= 0}
+                        className={`rounded-lg border px-3 py-3 text-left text-sm ${
+                          loanPaymentScope === 'INTEREST_ONLY'
+                            ? 'border-teal-600 bg-teal-50 text-teal-900'
+                            : 'border-slate-200 bg-white text-slate-700'
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                      >
+                        <p className="font-semibold">Pagar somente juros</p>
+                        <p className="text-xs text-slate-500">
+                          Paga apenas os juros que ainda estão pendentes: R$ {parseFloat(payTarget.loan.interestRemainingAmount).toFixed(2)}
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {payMethod === 'PIX' && pixSession?.pix.copyPasteCode && (
                   <div className="space-y-4 rounded-xl border border-teal-100 bg-teal-50 px-4 py-4 text-sm">
                     <div>
@@ -829,7 +934,7 @@ export function MemberPortalPage() {
                   <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-3 text-sm">
                     <p className="font-semibold text-teal-700">Pix pronto para gerar</p>
                     <p className="mt-1 text-slate-700">
-                      O valor do Pix será definido pelo backend com base no saldo pendente.
+                      O valor do Pix será preenchido automaticamente com base no valor pendente deste pagamento.
                     </p>
                     <p className="mt-2 font-mono text-slate-800">{cashGroup.receivingPixKey}</p>
                     {cashGroup.receivingPixKeyHolder && (
@@ -880,7 +985,9 @@ export function MemberPortalPage() {
                           payTarget.charge.status === 'PARTIAL'
                         ? 'Saldo restante (R$)'
                         : payTarget?.type === 'LOAN'
-                          ? 'Saldo a pagar (R$)'
+                          ? loanPaymentScope === 'INTEREST_ONLY'
+                            ? 'Valor dos juros pendentes (R$)'
+                            : 'Saldo total a pagar (R$)'
                           : 'Valor declarado (R$)'
                   }
                   type="text"
@@ -889,8 +996,15 @@ export function MemberPortalPage() {
                   onChange={(e) => setPayAmount(e.target.value)}
                   placeholder="0,00"
                   required
-                  readOnly={payMethod === 'PIX' && payTarget?.type !== 'QUOTA_DECLARE'}
+                  readOnly={
+                    payMethod === 'PIX' && payTarget?.type !== 'QUOTA_DECLARE'
+                  }
                 />
+                {payTarget?.type === 'LOAN' && selectedLoanSuggestedAmount != null && (
+                  <p className="text-xs text-slate-500">
+                    Valor calculado automaticamente para esta opção: R$ {selectedLoanSuggestedAmount.toFixed(2)}
+                  </p>
+                )}
 
                 {/* Comprovante */}
                 {payMethod === 'PIX' && payTarget?.type !== 'QUOTA_DECLARE' && !pixSession ? (

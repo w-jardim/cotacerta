@@ -13,6 +13,7 @@ import type {
   PixStartResponse,
   AttachPixReceiptData,
   MemberPortalReceivingSettings,
+  PaymentRequestAnalysisResponse,
 } from './types';
 
 export const memberPortalApi = {
@@ -97,8 +98,8 @@ export const memberPortalApi = {
   async attachPaymentReceipt(
     requestId: string,
     data: AttachPixReceiptData,
-  ): Promise<PixStartResponse & { message: string }> {
-    const response = await apiClient.patch<PixStartResponse & { message: string }>(
+  ): Promise<PixStartResponse & { message: string; analysis?: PaymentRequestAnalysisResponse | null }> {
+    const response = await apiClient.patch<PixStartResponse & { message: string; analysis?: PaymentRequestAnalysisResponse | null }>(
       `/member-portal/payment-requests/${requestId}/receipt`,
       data,
     );

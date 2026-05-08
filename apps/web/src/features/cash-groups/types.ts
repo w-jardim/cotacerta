@@ -81,6 +81,35 @@ export type AdminPaymentRequestStatus =
   | 'REJECTED'
   | 'CANCELED';
 
+export type AdminPaymentRequestAnalysisStatus =
+  | 'NOT_ANALYZED'
+  | 'AUTO_MATCHED'
+  | 'NEEDS_MANUAL_REVIEW'
+  | 'MISMATCH';
+
+export interface AdminPaymentRequestAnalysis {
+  id: string;
+  status: AdminPaymentRequestAnalysisStatus;
+  extractedText: string | null;
+  extractedAmount: string | null;
+  extractedPaidAt: string | null;
+  extractedReceiver: string | null;
+  extractedPixKey: string | null;
+  extractedTxid: string | null;
+  extractedBank: string | null;
+  expectedAmount: string | null;
+  expectedReceiver: string | null;
+  expectedPixKey: string | null;
+  amountMatches: boolean | null;
+  receiverMatches: boolean | null;
+  pixKeyMatches: boolean | null;
+  dateLooksValid: boolean | null;
+  issues: string[];
+  analyzedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminPaymentRequest {
   id: string;
   type: 'MONTHLY_CHARGE' | 'LOAN';
@@ -116,6 +145,7 @@ export interface AdminPaymentRequest {
     description: string | null;
     txid: string | null;
   } | null;
+  analysis: AdminPaymentRequestAnalysis | null;
   reviewSummary: {
     expectedAmount: string | null;
     declaredAmount: string;
@@ -130,4 +160,20 @@ export interface AdminPaymentRequest {
     recommendation: string;
   };
   reviewedBy: { id: string; name: string } | null;
+}
+
+export interface PaymentRequestAnalysisResponse {
+  paymentRequestId: string;
+  requestStatus: AdminPaymentRequestStatus;
+  receiptPresent: boolean;
+  analysis: AdminPaymentRequestAnalysis | null;
+  expected: {
+    amount: string | null;
+    receiver: string | null;
+    pixKey: string | null;
+  };
+  summary: {
+    badge: string;
+    message: string;
+  };
 }

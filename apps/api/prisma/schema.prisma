@@ -57,6 +57,13 @@ enum PaymentRequestStatus {
   CANCELED
 }
 
+enum PaymentRequestAnalysisStatus {
+  NOT_ANALYZED
+  AUTO_MATCHED
+  NEEDS_MANUAL_REVIEW
+  MISMATCH
+}
+
 enum PaymentRequestType {
   MONTHLY_CHARGE
   LOAN
@@ -245,10 +252,12 @@ model PaymentReceipt {
   mimeType    String        @map("mime_type")
   sizeBytes   Int           @map("size_bytes")
   dataUrl     String        @map("data_url")
+  receiptHash String?       @map("receipt_hash")
   createdAt   DateTime      @default(now()) @map("created_at")
 
   payment     ChargePayment @relation(fields: [paymentId], references: [id])
 
+  @@index([receiptHash])
   @@map("payment_receipts")
 }
 
@@ -314,6 +323,7 @@ model PaymentRequest {
   receiptFileName  String?              @map("receipt_file_name")
   receiptMimeType  String?              @map("receipt_mime_type")
   receiptDataUrl   String?              @map("receipt_data_url")
+  receiptHash      String?              @map("receipt_hash")
   notes            String?
   status           PaymentRequestStatus @default(PENDING_REVIEW)
   reviewedByUserId String?              @map("reviewed_by_user_id")
@@ -328,11 +338,41 @@ model PaymentRequest {
   loan             Loan?                @relation(fields: [loanId], references: [id])
   reviewedBy       User?                @relation(fields: [reviewedByUserId], references: [id])
   pixPayload       PixPaymentPayload?
+  analysis         PaymentRequestAnalysis?
 
   @@index([cashGroupId])
   @@index([memberId])
+  @@index([receiptHash])
   @@index([status])
   @@map("payment_requests")
+}
+
+model PaymentRequestAnalysis {
+  id                String                       @id @default(cuid())
+  paymentRequestId  String                       @unique @map("payment_request_id")
+  status            PaymentRequestAnalysisStatus @default(NOT_ANALYZED)
+  extractedText     String?                      @map("extracted_text")
+  extractedAmount   Decimal?                     @map("extracted_amount") @db.Decimal(10, 2)
+  extractedPaidAt   DateTime?                    @map("extracted_paid_at")
+  extractedReceiver String?                      @map("extracted_receiver")
+  extractedPixKey   String?                      @map("extracted_pix_key")
+  extractedTxid     String?                      @map("extracted_txid")
+  extractedBank     String?                      @map("extracted_bank")
+  expectedAmount    Decimal?                     @map("expected_amount") @db.Decimal(10, 2)
+  expectedReceiver  String?                      @map("expected_receiver")
+  expectedPixKey    String?                      @map("expected_pix_key")
+  amountMatches     Boolean?                     @map("amount_matches")
+  receiverMatches   Boolean?                     @map("receiver_matches")
+  pixKeyMatches     Boolean?                     @map("pix_key_matches")
+  dateLooksValid    Boolean?                     @map("date_looks_valid")
+  issues            Json?
+  analyzedAt        DateTime?                    @map("analyzed_at")
+  createdAt         DateTime                     @default(now()) @map("created_at")
+  updatedAt         DateTime                     @updatedAt @map("updated_at")
+
+  paymentRequest    PaymentRequest               @relation(fields: [paymentRequestId], references: [id])
+
+  @@map("payment_request_analyses")
 }
 
 model PixPaymentPayload {

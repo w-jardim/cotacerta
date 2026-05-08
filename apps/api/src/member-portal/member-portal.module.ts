@@ -3,9 +3,11 @@ import { MemberPortalController } from './member-portal.controller';
 import { MemberPortalService } from './member-portal.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PixModule } from '../pix/pix.module';
+import { PaymentRequestsModule } from '../payment-requests/payment-requests.module';
+import { ReceiptFingerprintModule } from '../common/receipt/receipt-fingerprint.module';
 
 @Module({
-  imports: [PrismaModule, PixModule],
+  imports: [PrismaModule, PixModule, PaymentRequestsModule, ReceiptFingerprintModule],
   controllers: [MemberPortalController],
   providers: [MemberPortalService],
 })

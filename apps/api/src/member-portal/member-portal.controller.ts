@@ -55,6 +55,10 @@ class SubmitPaymentRequestBodyDto implements SubmitPaymentRequestDto {
 class StartPixPaymentBodyDto implements StartPixPaymentDto {
   @IsIn(['PIX'])
   method: 'PIX';
+
+  @IsOptional()
+  @IsIn(['FULL', 'INTEREST_ONLY'])
+  paymentScope?: 'FULL' | 'INTEREST_ONLY';
 }
 
 class AttachPaymentReceiptBodyDto implements AttachPaymentReceiptDto {

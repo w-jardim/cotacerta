@@ -10,10 +10,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GenerateChargesDto } from './dto/generate-charges.dto';
 import { MarkPaidDto } from './dto/mark-paid.dto';
 import { RegisterPaymentDto, PaymentReceiptDto } from './dto/register-payment.dto';
+import { ReceiptFingerprintService } from '../common/receipt/receipt-fingerprint.service';
 
 @Injectable()
 export class ChargesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly receiptFingerprintService: ReceiptFingerprintService,
+  ) {}
 
   async generateCharges(
     userId: string,
@@ -263,6 +267,14 @@ export class ChargesService {
     }
 
     this.validateReceipt(dto.receipt);
+    const receiptHash = dto.receipt
+      ? await this.receiptFingerprintService.assertReceiptIsUnique(
+          dto.receipt.dataUrl,
+          {
+            manualContext: true,
+          },
+        )
+      : null;
 
     const payment = await this.prisma.chargePayment.create({
       data: {
@@ -279,6 +291,7 @@ export class ChargesService {
                 mimeType: dto.receipt.mimeType,
                 sizeBytes: dto.receipt.sizeBytes,
                 dataUrl: dto.receipt.dataUrl,
+                receiptHash,
               },
             }
           : undefined,

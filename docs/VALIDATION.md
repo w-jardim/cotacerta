@@ -223,6 +223,49 @@ Cada fase deve ter:
 - revisão de regra de negócio;
 - registro de riscos.
 
+## Fase 12C — Leitura inteligente de comprovante Pix
+
+Validações:
+
+- leitura de comprovante ocorre localmente quando o arquivo é PDF com texto extraível;
+- imagem sem OCR local confiável cai em `NEEDS_MANUAL_REVIEW`;
+- falha de leitura não vira `500`;
+- divergência identificada vira `MISMATCH`;
+- match positivo vira `AUTO_MATCHED`;
+- gestor continua sendo o único responsável por `CONFIRMED` e `REJECTED`;
+- cobrança ou empréstimo não sofre baixa automática definitiva após a análise;
+- gestor vê valor esperado, valor encontrado, recebedor, chave Pix, data e divergências;
+- cotista vê apenas mensagens de recebimento e aguardo de confirmação final;
+- não existe integração bancária, webhook Pix, Open Finance, OCR externo pago ou IA externa sem configuração explícita.
+
+Comandos recomendados:
+```bash
+npm run build:api
+npm run build:web
+docker compose up -d --build
+docker compose ps
+curl -s https://api.cotacerta.gardenwjs.tech/health
+curl -I https://cotacerta.gardenwjs.tech
+```
+
+Observação obrigatória:
+- A leitura do comprovante é apenas auxiliar.
+- A baixa final continua dependendo da confirmação do gestor.
+
+### Endurecimento de unicidade do comprovante
+
+Validações:
+
+- comprovantes novos recebem `receiptHash` SHA-256 calculado no backend;
+- o sistema bloqueia reaproveitamento global por `receiptHash` entre `PaymentRequest` e `PaymentReceipt`;
+- o sistema mantém fallback por `dataUrl` para registros antigos sem hash;
+- o bloqueio vale no envio do cotista e na baixa manual do gestor;
+- comprovante duplicado retorna `409 Conflict`, não `500`.
+
+Observação obrigatória:
+- essa proteção impede reutilização do mesmo arquivo idêntico;
+- reexportações ou recompressões podem exigir fingerprint visual ou OCR em fase futura.
+
 ## Fase 6 — Pix e comprovantes
 
 Validações:

@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PixPayloadService } from '../pix/pix-payload.service';
+import { PaymentRequestAnalysisService } from '../payment-requests/payment-request-analysis.service';
+import { ReceiptFingerprintService } from '../common/receipt/receipt-fingerprint.service';
 
 export interface UpdateMemberProfileDto {
   name?: string;
@@ -25,6 +27,7 @@ export interface SubmitPaymentRequestDto {
 
 export interface StartPixPaymentDto {
   method: 'PIX';
+  paymentScope?: 'FULL' | 'INTEREST_ONLY';
 }
 
 export interface AttachPaymentReceiptDto {
@@ -38,6 +41,8 @@ export class MemberPortalService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pixPayloadService: PixPayloadService,
+    private readonly paymentRequestAnalysisService: PaymentRequestAnalysisService,
+    private readonly receiptFingerprintService: ReceiptFingerprintService,
   ) {}
 
   private async getMemberByUserId(userId: string) {
@@ -197,7 +202,7 @@ export class MemberPortalService {
   async getLoans(userId: string) {
     const member = await this.getMemberByUserId(userId);
 
-    return this.prisma.loan.findMany({
+    const loans = await this.prisma.loan.findMany({
       where: { memberId: member.id },
       include: {
         payments: {
@@ -206,6 +211,8 @@ export class MemberPortalService {
       },
       orderBy: { grantedAt: 'desc' },
     });
+
+    return loans.map((loan) => this.attachLoanMeta(loan));
   }
 
   async getDebts(userId: string) {
@@ -266,9 +273,11 @@ export class MemberPortalService {
       );
     }
 
-    if (dto.receiptDataUrl) {
-      await this.assertReceiptNotReused(member.id, dto.receiptDataUrl);
-    }
+    const receiptHash = dto.receiptDataUrl
+      ? await this.receiptFingerprintService.assertReceiptIsUnique(
+          dto.receiptDataUrl,
+        )
+      : null;
 
     if (dto.type === 'MONTHLY_CHARGE' && dto.monthlyChargeId) {
       const charge = await this.prisma.monthlyCharge.findFirst({
@@ -313,21 +322,30 @@ export class MemberPortalService {
         receiptFileName: dto.receiptFileName ?? null,
         receiptMimeType: dto.receiptMimeType ?? null,
         receiptDataUrl: dto.receiptDataUrl ?? null,
+        receiptHash,
         notes: dto.notes ?? null,
         status: 'PENDING_REVIEW',
       },
     });
 
+    const analysis =
+      request.receiptDataUrl && request.receiptMimeType
+        ? await this.paymentRequestAnalysisService.analyzePaymentRequest(
+            request.id,
+          )
+        : null;
+
     return {
-      message:
-        dto.method === 'PIX'
-          ? 'Comprovante enviado. Aguardando conferência do gestor.'
-          : 'Pagamento informado. Aguardando confirmação do gestor.',
+      message: this.buildMemberFacingReceiptMessage(
+        analysis?.analysis?.status ?? request.status,
+        dto.method,
+      ),
       request: {
         id: request.id,
-        status: request.status,
+        status: analysis?.requestStatus ?? request.status,
         createdAt: request.createdAt,
       },
+      analysis,
     };
   }
 
@@ -344,9 +362,19 @@ export class MemberPortalService {
           select: { id: true, principalAmount: true, totalDue: true },
         },
         pixPayload: true,
+        analysis: true,
       },
       orderBy: { createdAt: 'desc' },
-    });
+    }).then((requests) =>
+      requests.map((request) => ({
+        ...request,
+        analysis: request.analysis
+          ? this.paymentRequestAnalysisService.serializeAnalysisRecord(
+              request.analysis,
+            )
+          : null,
+      })),
+    );
   }
 
   async startChargePixPayment(
@@ -425,16 +453,28 @@ export class MemberPortalService {
       );
     }
 
-    const amount = Number(loan.totalDue) - Number(loan.amountPaid);
+    const loanWithMeta = this.attachLoanMeta(loan);
+    const paymentScope = dto.paymentScope ?? 'FULL';
+    const amount =
+      paymentScope === 'INTEREST_ONLY'
+        ? Number(loanWithMeta.interestRemainingAmount)
+        : Number(loanWithMeta.remainingAmount);
+
     if (amount <= 0) {
-      throw new BadRequestException('Este empréstimo não possui saldo pendente.');
+      throw new BadRequestException(
+        paymentScope === 'INTEREST_ONLY'
+          ? 'Este empréstimo não possui juros pendentes para pagamento.'
+          : 'Este empréstimo não possui saldo pendente.',
+      );
     }
 
     this.assertPixAvailable(member.cashGroup, 'LOAN');
 
     const description = this.buildPixDescription(
       member.cashGroup.receivingPixDescriptionPrefix,
-      'PAGAMENTO EMPRESTIMO',
+      paymentScope === 'INTEREST_ONLY'
+        ? 'PAGAMENTO JUROS EMPRESTIMO'
+        : 'PAGAMENTO EMPRESTIMO',
     );
 
     const txid = `LOAN${loan.id.slice(-21)}`;
@@ -478,11 +518,13 @@ export class MemberPortalService {
     }
 
     this.validateReceipt(dto);
-    await this.assertReceiptNotReused(
-      member.id,
-      dto.receiptDataUrl,
-      request.id,
-    );
+    const receiptHash =
+      await this.receiptFingerprintService.assertReceiptIsUnique(
+        dto.receiptDataUrl,
+        {
+          ignorePaymentRequestId: request.id,
+        },
+      );
 
     const updated = await this.prisma.paymentRequest.update({
       where: { id: request.id },
@@ -490,6 +532,7 @@ export class MemberPortalService {
         receiptFileName: dto.receiptFileName,
         receiptMimeType: dto.receiptMimeType,
         receiptDataUrl: dto.receiptDataUrl,
+        receiptHash,
         status: 'PENDING_REVIEW',
       },
       include: {
@@ -497,15 +540,26 @@ export class MemberPortalService {
       },
     });
 
+    const analysis =
+      updated.receiptDataUrl && updated.receiptMimeType
+        ? await this.paymentRequestAnalysisService.analyzePaymentRequest(
+            updated.id,
+          )
+        : null;
+
     return {
-      message: 'Comprovante enviado. Aguardando confirmação do gestor.',
+      message: this.buildMemberFacingReceiptMessage(
+        analysis?.analysis?.status ?? updated.status,
+        updated.method,
+      ),
       request: {
         id: updated.id,
-        status: updated.status,
+        status: analysis?.requestStatus ?? updated.status,
         amount: Number(updated.amountDeclared),
         method: updated.method,
         createdAt: updated.createdAt,
       },
+      analysis,
       pix: updated.pixPayload
         ? {
             copyPasteCode: updated.pixPayload.copyPasteCode,
@@ -667,6 +721,22 @@ export class MemberPortalService {
     };
   }
 
+  private buildMemberFacingReceiptMessage(status: string, method: string) {
+    if (method !== 'PIX') {
+      return 'Pagamento informado. Aguardando confirmação do gestor.';
+    }
+
+    if (status === 'AUTO_MATCHED') {
+      return 'Comprovante recebido. Os dados parecem compatíveis. Aguardando confirmação final do gestor.';
+    }
+
+    if (status === 'MISMATCH') {
+      return 'Comprovante recebido, mas o sistema encontrou uma possível divergência. Aguarde a análise do gestor.';
+    }
+
+    return 'Comprovante recebido. O gestor fará a conferência manual.';
+  }
+
   private validateReceipt(receipt: AttachPaymentReceiptDto) {
     const allowedMimeTypes = [
       'image/jpeg',
@@ -699,33 +769,77 @@ export class MemberPortalService {
     }
   }
 
-  private async assertReceiptNotReused(
-    memberId: string,
-    receiptDataUrl: string,
-    currentRequestId?: string,
-  ) {
-    const duplicatedReceipt = await this.prisma.paymentRequest.findFirst({
-      where: {
-        memberId,
-        receiptDataUrl,
-        ...(currentRequestId
-          ? {
-              NOT: {
-                id: currentRequestId,
-              },
-            }
-          : {}),
-      },
-      select: {
-        id: true,
-        createdAt: true,
-      },
-    });
+  private getLoanFinancialSnapshot(loan: {
+    principalAmount: any;
+    totalDue: any;
+    interestRate: any;
+    amountPaid: any;
+    payments?: Array<{
+      amount: any;
+      status: string;
+      paidAt: Date;
+    }>;
+  }) {
+    const confirmedPayments = (loan.payments ?? []).filter(
+      (payment) => payment.status === 'CONFIRMED',
+    );
+    const amountPaid = confirmedPayments.reduce(
+      (sum, payment) => sum + Number(payment.amount),
+      0,
+    );
+    const principalAmount = Number(loan.principalAmount);
+    const interestRate = Number(loan.interestRate);
+    const totalDue = Number(loan.totalDue);
+    const totalInterestAmount = Number(
+      (principalAmount * (interestRate / 100)).toFixed(2),
+    );
+    const interestPaidAmount = Number(
+      Math.min(amountPaid, totalInterestAmount).toFixed(2),
+    );
+    const interestRemainingAmount = Number(
+      Math.max(0, totalInterestAmount - interestPaidAmount).toFixed(2),
+    );
+    const principalPaidAmount = Number(
+      Math.max(0, amountPaid - totalInterestAmount).toFixed(2),
+    );
+    const principalRemainingAmount = Number(
+      Math.max(0, principalAmount - principalPaidAmount).toFixed(2),
+    );
+    const remainingAmount = Number(Math.max(0, totalDue - amountPaid).toFixed(2));
 
-    if (duplicatedReceipt) {
-      throw new BadRequestException(
-        'Este comprovante já foi enviado anteriormente. Envie um comprovante diferente para evitar duplicidade.',
-      );
-    }
+    return {
+      amountPaid: Number(amountPaid.toFixed(2)),
+      totalInterestAmount,
+      interestPaidAmount,
+      interestRemainingAmount,
+      principalPaidAmount,
+      principalRemainingAmount,
+      remainingAmount,
+    };
+  }
+
+  private attachLoanMeta<T extends {
+    principalAmount: any;
+    totalDue: any;
+    amountPaid: any;
+    interestRate: any;
+    payments?: Array<{
+      amount: any;
+      status: string;
+      paidAt: Date;
+    }>;
+  }>(loan: T) {
+    const snapshot = this.getLoanFinancialSnapshot(loan);
+
+    return {
+      ...loan,
+      amountPaid: snapshot.amountPaid.toFixed(2),
+      totalInterestAmount: snapshot.totalInterestAmount.toFixed(2),
+      interestPaidAmount: snapshot.interestPaidAmount.toFixed(2),
+      interestRemainingAmount: snapshot.interestRemainingAmount.toFixed(2),
+      principalPaidAmount: snapshot.principalPaidAmount.toFixed(2),
+      principalRemainingAmount: snapshot.principalRemainingAmount.toFixed(2),
+      remainingAmount: snapshot.remainingAmount.toFixed(2),
+    };
   }
 }

@@ -134,3 +134,14 @@
 - baixa definitiva continua dependendo do gestor.
 
 🟡 Status: Em andamento
+
+## Fase 12C — Leitura inteligente de comprovante Pix
+
+- leitura local de PDF com texto extraível;
+- imagens sem OCR local confiável ficam em revisão manual;
+- comparação auxiliar de valor, recebedor, chave Pix, data e identificador;
+- gestor visualiza divergências e pode reprocessar a análise;
+- a confirmação final continua exclusivamente com o gestor;
+- não há integração bancária nem baixa automática definitiva.
+
+🟡 Status: Em andamento

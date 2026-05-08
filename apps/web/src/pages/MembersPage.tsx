@@ -25,9 +25,10 @@ const MONTH_NAMES = [
 ];
 
 const PAY_REQUEST_STATUS_LABEL: Record<string, string> = {
+  NOT_ANALYZED: 'Aguardando análise',
   PENDING_REVIEW: 'Aguardando análise',
-  AUTO_MATCHED: 'Pré-validado',
-  NEEDS_MANUAL_REVIEW: 'Conferência manual',
+  AUTO_MATCHED: 'Compatível',
+  NEEDS_MANUAL_REVIEW: 'Precisa revisão',
   MISMATCH: 'Divergência encontrada',
   CONFIRMED: 'Confirmado',
   REJECTED: 'Rejeitado',
@@ -82,11 +83,12 @@ export function MembersPage() {
   // Payment requests state
   const [paymentRequests, setPaymentRequests] = useState<AdminPaymentRequest[]>([]);
   const [isPayRequestsModalOpen, setIsPayRequestsModalOpen] = useState(false);
-  const [selectedPayRequest, setSelectedPayRequest] = useState<AdminPaymentRequest | null>(null);
+  const [selectedPayRequestId, setSelectedPayRequestId] = useState<string | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [isReviewingPay, setIsReviewingPay] = useState(false);
   const [reviewAction, setReviewAction] = useState<'confirm' | 'reject' | null>(null);
   const [reviewPayError, setReviewPayError] = useState('');
+  const [reprocessingRequestId, setReprocessingRequestId] = useState<string | null>(null);
   const [showReceiptFor, setShowReceiptFor] = useState<string | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<{
     fileName: string | null;
@@ -183,7 +185,7 @@ export function MembersPage() {
     setIsRejectModalOpen(false);
     setRejectionReason('');
     setIsPayRequestsModalOpen(false);
-    setSelectedPayRequest(null);
+    setSelectedPayRequestId(null);
     setReviewNotes('');
     setReviewAction(null);
     setReviewPayError('');
@@ -205,6 +207,37 @@ export function MembersPage() {
         {label}: {value === true ? 'Conferido' : value === false ? 'Atenção' : 'Sem comparação'}
       </span>
     );
+  }
+
+  function renderAnalysisStatusMessage(status: string | null) {
+    if (status === 'AUTO_MATCHED') {
+      return 'O sistema encontrou dados compatíveis, mas a baixa ainda depende da sua confirmação.';
+    }
+
+    if (status === 'MISMATCH') {
+      return 'O sistema encontrou divergências. Confira antes de confirmar.';
+    }
+
+    if (status === 'NEEDS_MANUAL_REVIEW') {
+      return 'Não foi possível validar automaticamente. Faça a conferência manual.';
+    }
+
+    return 'Aguardando análise do comprovante.';
+  }
+
+  async function handleReprocessAnalysis(requestId: string) {
+    if (!cashGroupId) return;
+
+    try {
+      setReprocessingRequestId(requestId);
+      setReviewPayError('');
+      await cashGroupsApi.analyzePaymentRequest(cashGroupId, requestId);
+      await loadData();
+    } catch (err: any) {
+      setReviewPayError(err.response?.data?.message || 'Erro ao reprocessar análise');
+    } finally {
+      setReprocessingRequestId(null);
+    }
   }
 
   async function handleConfirmPayRequest(req: AdminPaymentRequest) {
@@ -373,7 +406,11 @@ export function MembersPage() {
   const totalQuotas = activeMembers.reduce((sum, member) => sum + member.quotasCount, 0);
   const totalMonthly = cashGroup ? parseFloat(cashGroup.quotaValue) * totalQuotas : 0;
   const pendingPayRequests = paymentRequests.filter(
-    (r) => r.status === 'PENDING_REVIEW' || r.status === 'AUTO_MATCHED' || r.status === 'NEEDS_MANUAL_REVIEW',
+    (r) =>
+      r.status === 'PENDING_REVIEW' ||
+      r.status === 'AUTO_MATCHED' ||
+      r.status === 'NEEDS_MANUAL_REVIEW' ||
+      r.status === 'MISMATCH',
   );
 
   if (isLoading) {
@@ -964,7 +1001,7 @@ export function MembersPage() {
 
         {/* Modal: Solicitações de pagamento */}
         <Modal
-          isOpen={isPayRequestsModalOpen && !selectedPayRequest}
+          isOpen={isPayRequestsModalOpen}
           onClose={closeModals}
           title="Solicitações de pagamento"
         >
@@ -1043,61 +1080,114 @@ export function MembersPage() {
                   )}
 
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-700">
-                    <p className="font-semibold uppercase tracking-wide text-slate-600">
-                      Ajuda para conferência
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold uppercase tracking-wide text-slate-600">
+                        Análise do comprovante
+                      </p>
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                        req.analysis?.status === 'AUTO_MATCHED'
+                          ? 'bg-green-100 text-green-800'
+                          : req.analysis?.status === 'MISMATCH'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {req.receiptDataUrl
+                          ? req.analysis
+                            ? PAY_REQUEST_STATUS_LABEL[req.analysis.status] ?? req.analysis.status
+                            : 'Aguardando análise'
+                          : 'Aguardando comprovante'}
+                      </span>
+                    </div>
                     <p className="mt-1 text-slate-600">
-                      {req.reviewSummary.recommendation}
+                      {renderAnalysisStatusMessage(req.analysis?.status ?? null)}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {renderCheckBadge(
-                        'Valor da cobrança',
-                        req.reviewSummary.amountMatchesExpected,
-                      )}
-                      {renderCheckBadge(
-                        'Valor do Pix',
-                        req.reviewSummary.pixMatchesDeclared,
-                      )}
-                      {renderCheckBadge(
-                        'Chave Pix',
-                        req.reviewSummary.pixKeyMatchesConfigured,
+                        'Valor esperado',
+                        req.analysis?.amountMatches ?? req.reviewSummary.amountMatchesExpected,
                       )}
                       {renderCheckBadge(
                         'Recebedor',
-                        req.reviewSummary.receiverMatchesConfigured,
+                        req.analysis?.receiverMatches ?? req.reviewSummary.receiverMatchesConfigured,
+                      )}
+                      {renderCheckBadge(
+                        'Chave Pix',
+                        req.analysis?.pixKeyMatches ?? req.reviewSummary.pixKeyMatchesConfigured,
+                      )}
+                      {renderCheckBadge(
+                        'Data do pagamento',
+                        req.analysis?.dateLooksValid ?? null,
                       )}
                     </div>
-                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       <div>
                         <p className="font-medium text-slate-500">Valor esperado</p>
                         <p className="text-slate-900">
-                          {req.reviewSummary.expectedAmount
-                            ? `R$ ${req.reviewSummary.expectedAmount}`
+                          {req.analysis?.expectedAmount || req.reviewSummary.expectedAmount
+                            ? `R$ ${req.analysis?.expectedAmount || req.reviewSummary.expectedAmount}`
                             : 'Não disponível'}
                         </p>
                       </div>
                       <div>
-                        <p className="font-medium text-slate-500">Valor informado pelo cotista</p>
+                        <p className="font-medium text-slate-500">Valor encontrado</p>
                         <p className="text-slate-900">
-                          R$ {req.reviewSummary.declaredAmount}
+                          {req.analysis?.extractedAmount
+                            ? `R$ ${req.analysis.extractedAmount}`
+                            : 'Não disponível'}
                         </p>
                       </div>
                       <div>
-                        <p className="font-medium text-slate-500">Valor gerado no Pix</p>
+                        <p className="font-medium text-slate-500">Recebedor esperado</p>
                         <p className="text-slate-900">
-                          {req.reviewSummary.pixAmount
-                            ? `R$ ${req.reviewSummary.pixAmount}`
+                          {req.analysis?.expectedReceiver || req.reviewSummary.configuredReceiverName || 'Não disponível'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-500">Recebedor encontrado</p>
+                        <p className="text-slate-900">
+                          {req.analysis?.extractedReceiver || 'Não disponível'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-500">Chave Pix esperada</p>
+                        <p className="break-all text-slate-900">
+                          {req.analysis?.expectedPixKey || req.reviewSummary.configuredPixKey || 'Não disponível'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-500">Chave Pix encontrada</p>
+                        <p className="break-all text-slate-900">
+                          {req.analysis?.extractedPixKey || 'Não disponível'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-500">Data encontrada</p>
+                        <p className="text-slate-900">
+                          {req.analysis?.extractedPaidAt
+                            ? new Date(req.analysis.extractedPaidAt).toLocaleString('pt-BR')
                             : 'Não disponível'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-500">Identificador</p>
+                        <p className="break-all text-slate-900">
+                          {req.analysis?.extractedTxid || req.pixPayload?.txid || 'Não disponível'}
                         </p>
                       </div>
                     </div>
-                    {req.reviewSummary.warnings.length > 0 && (
+                    {req.analysis?.issues?.length ? (
+                      <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-2 text-amber-800">
+                        {req.analysis.issues.map((issue) => (
+                          <p key={issue}>{issue}</p>
+                        ))}
+                      </div>
+                    ) : req.reviewSummary.warnings.length > 0 ? (
                       <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-2 text-amber-800">
                         {req.reviewSummary.warnings.map((warning) => (
                           <p key={warning}>{warning}</p>
                         ))}
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   {req.receiptDataUrl && (
@@ -1160,10 +1250,28 @@ export function MembersPage() {
 
                   {(req.status === 'PENDING_REVIEW' || req.status === 'AUTO_MATCHED' || req.status === 'NEEDS_MANUAL_REVIEW' || req.status === 'MISMATCH') && (
                     <div className="space-y-2 pt-1 border-t border-slate-100">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={
+                            reprocessingRequestId === req.id ||
+                            !req.receiptDataUrl
+                          }
+                          onClick={() => handleReprocessAnalysis(req.id)}
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {reprocessingRequestId === req.id
+                            ? 'Reprocessando...'
+                            : 'Reprocessar análise'}
+                        </button>
+                      </div>
                       <textarea
-                        value={selectedPayRequest?.id === req.id ? reviewNotes : ''}
-                        onChange={(e) => { setSelectedPayRequest(req); setReviewNotes(e.target.value); }}
-                        onFocus={() => setSelectedPayRequest(req)}
+                        value={selectedPayRequestId === req.id ? reviewNotes : ''}
+                        onChange={(e) => {
+                          setSelectedPayRequestId(req.id);
+                          setReviewNotes(e.target.value);
+                        }}
+                        onFocus={() => setSelectedPayRequestId(req.id)}
                         rows={2}
                         placeholder="Observação do gestor (opcional)"
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none"
@@ -1171,24 +1279,32 @@ export function MembersPage() {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          disabled={isReviewingPay && selectedPayRequest?.id === req.id && reviewAction === 'confirm'}
-                          onClick={() => { setSelectedPayRequest(req); setReviewAction('confirm'); handleConfirmPayRequest(req); }}
+                          disabled={isReviewingPay && selectedPayRequestId === req.id && reviewAction === 'confirm'}
+                          onClick={() => {
+                            setSelectedPayRequestId(req.id);
+                            setReviewAction('confirm');
+                            handleConfirmPayRequest(req);
+                          }}
                           className="flex-1 rounded-lg bg-teal-600 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
                         >
-                          {isReviewingPay && selectedPayRequest?.id === req.id && reviewAction === 'confirm'
+                          {isReviewingPay && selectedPayRequestId === req.id && reviewAction === 'confirm'
                             ? 'Confirmando...' : 'Confirmar baixa'}
                         </button>
                         <button
                           type="button"
-                          disabled={isReviewingPay && selectedPayRequest?.id === req.id && reviewAction === 'reject'}
-                          onClick={() => { setSelectedPayRequest(req); setReviewAction('reject'); handleRejectPayRequest(req); }}
+                          disabled={isReviewingPay && selectedPayRequestId === req.id && reviewAction === 'reject'}
+                          onClick={() => {
+                            setSelectedPayRequestId(req.id);
+                            setReviewAction('reject');
+                            handleRejectPayRequest(req);
+                          }}
                           className="flex-1 rounded-lg border border-rose-300 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                         >
-                          {isReviewingPay && selectedPayRequest?.id === req.id && reviewAction === 'reject'
+                          {isReviewingPay && selectedPayRequestId === req.id && reviewAction === 'reject'
                             ? 'Rejeitando...' : 'Rejeitar'}
                         </button>
                       </div>
-                      {reviewPayError && selectedPayRequest?.id === req.id && (
+                      {reviewPayError && selectedPayRequestId === req.id && (
                         <p className="text-xs text-red-600">{reviewPayError}</p>
                       )}
                     </div>

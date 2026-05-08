@@ -132,6 +132,41 @@ Observação obrigatória:
 - QR Code Pix e copia e cola não representam integração bancária.
 - A baixa definitiva ainda depende da confirmação do gestor.
 
+## 10.2 Leitura inteligente do comprovante Pix
+
+- [ ] Cotista envia comprovante Pix em PDF com texto extraível
+- [ ] Sistema tenta leitura local do PDF
+- [ ] Gestor vê status da análise (`Compatível`, `Precisa revisão` ou `Divergência`)
+- [ ] Gestor vê valor esperado e valor encontrado
+- [ ] Gestor vê recebedor esperado e recebedor encontrado
+- [ ] Gestor vê chave Pix esperada e chave Pix encontrada
+- [ ] Gestor vê data encontrada e divergências
+- [ ] Gestor consegue reprocessar a análise
+- [ ] `AUTO_MATCHED` não confirma a baixa sozinho
+- [ ] `MISMATCH` não impede revisão manual do gestor
+- [ ] Imagem sem OCR local confiável fica em conferência manual
+- [ ] Cobrança ou empréstimo só muda para pago depois de `Confirmar baixa`
+
+Observação obrigatória:
+- A leitura do comprovante é auxiliar.
+- Não há integração bancária.
+- Não há baixa automática definitiva.
+
+## 10.3 Unicidade de comprovante por hash
+
+- [ ] Enviar um comprovante novo e verificar sucesso
+- [ ] Verificar no banco que o comprovante novo recebeu `receipt_hash`
+- [ ] Reenviar o mesmo comprovante em outra `PaymentRequest`
+- [ ] Esperado: `409 Conflict`
+- [ ] Tentar reutilizar o mesmo comprovante na baixa manual do gestor
+- [ ] Esperado: `409 Conflict`
+- [ ] Validar que registros antigos sem hash continuam protegidos por fallback de `dataUrl`
+
+Observação obrigatória:
+- comprovantes novos recebem hash SHA-256;
+- o bloqueio vale no sistema inteiro;
+- a proteção é forte para o mesmo arquivo binário, mas reexportações podem exigir fingerprint visual ou OCR no futuro.
+
 ---
 
 ## 11. Isolamento de dados

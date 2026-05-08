@@ -5,6 +5,7 @@ import type {
   UpdateCashGroupData,
   AdminPaymentRequest,
   ReceivingSettings,
+  PaymentRequestAnalysisResponse,
 } from './types';
 
 export const cashGroupsApi = {
@@ -59,6 +60,26 @@ export const cashGroupsApi = {
   async getPaymentRequests(groupId: string): Promise<AdminPaymentRequest[]> {
     const response = await apiClient.get<AdminPaymentRequest[]>(
       `/cash-groups/${groupId}/payment-requests`,
+    );
+    return response.data;
+  },
+
+  async getPaymentRequestAnalysis(
+    groupId: string,
+    requestId: string,
+  ): Promise<PaymentRequestAnalysisResponse> {
+    const response = await apiClient.get<PaymentRequestAnalysisResponse>(
+      `/cash-groups/${groupId}/payment-requests/${requestId}/analysis`,
+    );
+    return response.data;
+  },
+
+  async analyzePaymentRequest(
+    groupId: string,
+    requestId: string,
+  ): Promise<PaymentRequestAnalysisResponse> {
+    const response = await apiClient.post<PaymentRequestAnalysisResponse>(
+      `/cash-groups/${groupId}/payment-requests/${requestId}/analyze`,
     );
     return response.data;
   },

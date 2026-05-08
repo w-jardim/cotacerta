@@ -12,6 +12,7 @@ import { DebtorsModule } from './debtors/debtors.module';
 import { MemberAccessModule } from './member-access/member-access.module';
 import { MemberPortalModule } from './member-portal/member-portal.module';
 import { AnnualClosingsModule } from './annual-closings/annual-closings.module';
+import { PaymentRequestsModule } from './payment-requests/payment-requests.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AnnualClosingsModule } from './annual-closings/annual-closings.module';
     MemberAccessModule,
     MemberPortalModule,
     AnnualClosingsModule,
+    PaymentRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

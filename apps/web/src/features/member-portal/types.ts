@@ -72,6 +72,12 @@ export interface PortalLoan {
   interestRate: string;
   totalDue: string;
   amountPaid: string;
+  totalInterestAmount: string;
+  interestPaidAmount: string;
+  interestRemainingAmount: string;
+  principalPaidAmount: string;
+  principalRemainingAmount: string;
+  remainingAmount: string;
   grantedAt: string;
   dueDate: string | null;
   paidAt: string | null;
@@ -96,6 +102,34 @@ export type PaymentRequestStatus =
 
 export type PaymentRequestType = 'MONTHLY_CHARGE' | 'LOAN';
 export type ReceivingMethod = 'PIX' | 'CASH' | 'OTHER';
+export type PaymentRequestAnalysisStatus =
+  | 'NOT_ANALYZED'
+  | 'AUTO_MATCHED'
+  | 'NEEDS_MANUAL_REVIEW'
+  | 'MISMATCH';
+
+export interface PaymentRequestAnalysis {
+  id: string;
+  status: PaymentRequestAnalysisStatus;
+  extractedText: string | null;
+  extractedAmount: string | null;
+  extractedPaidAt: string | null;
+  extractedReceiver: string | null;
+  extractedPixKey: string | null;
+  extractedTxid: string | null;
+  extractedBank: string | null;
+  expectedAmount: string | null;
+  expectedReceiver: string | null;
+  expectedPixKey: string | null;
+  amountMatches: boolean | null;
+  receiverMatches: boolean | null;
+  pixKeyMatches: boolean | null;
+  dateLooksValid: boolean | null;
+  issues: string[];
+  analyzedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface PortalPaymentRequest {
   id: string;
@@ -118,6 +152,7 @@ export interface PortalPaymentRequest {
     description: string | null;
     txid: string | null;
   } | null;
+  analysis: PaymentRequestAnalysis | null;
 }
 
 export interface SubmitPaymentRequestData {
@@ -134,6 +169,7 @@ export interface SubmitPaymentRequestData {
 
 export interface StartPixPaymentData {
   method: 'PIX';
+  paymentScope?: 'FULL' | 'INTEREST_ONLY';
 }
 
 export interface PixStartResponse {
@@ -152,6 +188,22 @@ export interface PixStartResponse {
     amount: number;
     description: string | null;
     txid: string | null;
+  };
+}
+
+export interface PaymentRequestAnalysisResponse {
+  paymentRequestId: string;
+  requestStatus: PaymentRequestStatus;
+  receiptPresent: boolean;
+  analysis: PaymentRequestAnalysis | null;
+  expected: {
+    amount: string | null;
+    receiver: string | null;
+    pixKey: string | null;
+  };
+  summary: {
+    badge: string;
+    message: string;
   };
 }
 
