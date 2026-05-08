@@ -10,7 +10,9 @@ import { Modal } from '../components/ui/Modal';
 import { Textarea } from '../components/ui/Textarea';
 import { Alert } from '../components/ui/Alert';
 import { cashGroupsApi } from '../features/cash-groups/api';
+import { aiApi } from '../features/ai/api';
 import type { CashGroup, AdminPaymentRequest } from '../features/cash-groups/types';
+import type { AIConfig } from '../features/ai/types';
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING_REVIEW: 'Aguardando conferência',
@@ -96,10 +98,41 @@ export function PaymentRequestsPage() {
   const [rejectNotes, setRejectNotes] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
 
-  // Carregar caixinhas
+  // Config de IA
+  const [aiConfig, setAIConfig] = useState<AIConfig | null>(null);
+  const [isUpdatingAI, setIsUpdatingAI] = useState(false);
+
+  // Carregar caixinhas e config IA
   useEffect(() => {
     loadCashGroups();
+    aiApi.getConfig().then(setAIConfig).catch(() => {});
   }, []);
+
+  async function handleAIToggle(enabled: boolean) {
+    if (isUpdatingAI) return;
+    setIsUpdatingAI(true);
+    try {
+      const updated = await aiApi.updateConfig({ aiEnabled: enabled });
+      setAIConfig(updated);
+    } catch {
+      setError('Erro ao atualizar configuração de IA');
+    } finally {
+      setIsUpdatingAI(false);
+    }
+  }
+
+  async function handleAIProvider(provider: 'local' | 'openai') {
+    if (isUpdatingAI) return;
+    setIsUpdatingAI(true);
+    try {
+      const updated = await aiApi.updateConfig({ provider });
+      setAIConfig(updated);
+    } catch {
+      setError('Erro ao atualizar provider de IA');
+    } finally {
+      setIsUpdatingAI(false);
+    }
+  }
 
   // Carregar solicitações quando seleciona caixinha
   useEffect(() => {
@@ -244,6 +277,62 @@ export function PaymentRequestsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+          </div>
+        )}
+
+        {/* Card de Configuração de IA */}
+        {aiConfig !== null && (
+          <div className="rounded-xl bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-slate-900">Análise Assistida por IA</h3>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {aiConfig.aiEnabled
+                    ? `Ativa — provider: ${aiConfig.provider === 'openai' ? 'OpenAI' : 'Local (heurístico)'}`
+                    : 'Desativada — apenas análise heurística'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleAIToggle(!aiConfig.aiEnabled)}
+                disabled={isUpdatingAI}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  aiConfig.aiEnabled ? 'bg-teal-600' : 'bg-slate-200'
+                } ${isUpdatingAI ? 'opacity-50 cursor-not-allowed' : ''}`}
+                aria-label={aiConfig.aiEnabled ? 'Desativar IA' : 'Ativar IA'}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    aiConfig.aiEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {aiConfig.aiEnabled && (
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => handleAIProvider('local')}
+                  disabled={isUpdatingAI}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    aiConfig.provider === 'local'
+                      ? 'bg-teal-100 text-teal-800'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Local (heurístico)
+                </button>
+                <button
+                  onClick={() => handleAIProvider('openai')}
+                  disabled={isUpdatingAI}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    aiConfig.provider === 'openai'
+                      ? 'bg-teal-100 text-teal-800'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  OpenAI
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -578,7 +667,17 @@ export function PaymentRequestsPage() {
               {selectedRequest.analysis && (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-slate-700">Análise do Comprovante</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-700">Análise do Comprovante</p>
+                      {aiConfig?.aiEnabled && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                          </svg>
+                          IA ativa
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={handleReanalyze}
                       className="text-sm font-medium text-teal-600 hover:text-teal-700"
