@@ -3,7 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { CommunicationService } from './communication.service';
 import {
   CommunicationController,
-  CommunicationSendController,
+  CommunicationAdminController,
   MemberCommunicationController,
 } from './communication.controller';
 
@@ -11,7 +11,7 @@ import {
   imports: [PrismaModule],
   controllers: [
     CommunicationController,
-    CommunicationSendController,
+    CommunicationAdminController,
     MemberCommunicationController,
   ],
   providers: [CommunicationService],

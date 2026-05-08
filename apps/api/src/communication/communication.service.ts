@@ -52,14 +52,9 @@ export class CommunicationService {
         skip,
         take: limit,
       }),
-      this.prisma.communicationMessage.count({
-        where: { recipientUserId: userId },
-      }),
-      this.prisma.communicationMessage.count({
-        where: { recipientUserId: userId, isRead: false },
-      }),
+      this.prisma.communicationMessage.count({ where: { recipientUserId: userId } }),
+      this.prisma.communicationMessage.count({ where: { recipientUserId: userId, isRead: false } }),
     ]);
-
     return { messages, total, unread, page, limit };
   }
 
@@ -68,6 +63,14 @@ export class CommunicationService {
       where: { recipientUserId: userId, isRead: false },
     });
     return { count };
+  }
+
+  async getMessage(userId: string, messageId: string) {
+    const msg = await this.prisma.communicationMessage.findFirst({
+      where: { id: messageId, recipientUserId: userId },
+    });
+    if (!msg) throw new NotFoundException('Mensagem não encontrada.');
+    return msg;
   }
 
   async markAsRead(userId: string, ids: string[]) {
@@ -86,20 +89,49 @@ export class CommunicationService {
     return { updated: result.count };
   }
 
-  async sendToMember(
-    senderUserId: string,
-    opts: {
-      recipientUserId: string;
-      cashGroupId?: string;
-      memberId?: string;
-      title: string;
-      body: string;
-    },
-  ) {
+  // Admin replies to a member message (by original messageId)
+  async replyToMessage(adminUserId: string, originalMessageId: string, body: string) {
+    // Find original message to get context
+    const original = await this.prisma.communicationMessage.findUnique({
+      where: { id: originalMessageId },
+    });
+    if (!original) throw new NotFoundException('Mensagem original não encontrada.');
+
+    // Determine who to reply to
+    const recipientUserId = original.senderUserId;
+    if (!recipientUserId) throw new NotFoundException('Remetente original não encontrado.');
+
+    const replyTitle = original.title.startsWith('Re: ')
+      ? original.title
+      : `Re: ${original.title}`;
+
     return this.createInternal({
-      senderUserId,
-      recipientUserId: opts.recipientUserId,
-      cashGroupId: opts.cashGroupId,
+      senderUserId: adminUserId,
+      recipientUserId,
+      cashGroupId: original.cashGroupId ?? undefined,
+      memberId: original.memberId ?? undefined,
+      direction: 'ADMIN_TO_MEMBER',
+      title: replyTitle,
+      body,
+      eventType: 'admin_message',
+    });
+  }
+
+  // Admin sends a new message to a member (by memberId — resolves userId)
+  async sendToMemberByMemberId(
+    adminUserId: string,
+    opts: { memberId: string; title: string; body: string; cashGroupId?: string },
+  ) {
+    const member = await this.prisma.member.findUnique({
+      where: { id: opts.memberId },
+      select: { userId: true, cashGroupId: true },
+    });
+    if (!member || !member.userId) throw new NotFoundException('Cotista não encontrado.');
+
+    return this.createInternal({
+      senderUserId: adminUserId,
+      recipientUserId: member.userId,
+      cashGroupId: opts.cashGroupId ?? member.cashGroupId ?? undefined,
       memberId: opts.memberId,
       direction: 'ADMIN_TO_MEMBER',
       title: opts.title,
@@ -107,18 +139,13 @@ export class CommunicationService {
     });
   }
 
-  async contactAdminFromMember(
-    senderUserId: string,
-    opts: { title: string; body: string },
-  ) {
+  // Cotista contacts admin
+  async contactAdminFromMember(senderUserId: string, opts: { title: string; body: string }) {
     const member = await this.prisma.member.findUnique({
       where: { userId: senderUserId },
       include: { cashGroup: { select: { id: true, ownerUserId: true } } },
     });
-
-    if (!member) {
-      throw new NotFoundException('Cotista não encontrado.');
-    }
+    if (!member) throw new NotFoundException('Cotista não encontrado.');
 
     return this.createInternal({
       senderUserId,

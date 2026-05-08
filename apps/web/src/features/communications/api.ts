@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/api-client';
-import type { InboxResponse, UnreadCountResponse } from './types';
+import type { CommunicationMessage, InboxResponse, UnreadCountResponse } from './types';
 
 export const communicationsApi = {
   getUnreadCount: async (): Promise<UnreadCountResponse> => {
@@ -7,18 +7,38 @@ export const communicationsApi = {
     return res.data;
   },
 
-  getInbox: async (page = 1, limit = 20): Promise<InboxResponse> => {
+  getInbox: async (page = 1, limit = 30): Promise<InboxResponse> => {
     const res = await apiClient.get('/communications/inbox', { params: { page, limit } });
     return res.data;
   },
 
-  markRead: async (ids?: string[]): Promise<{ updated: number }> => {
+  getMessage: async (id: string): Promise<CommunicationMessage> => {
+    const res = await apiClient.get(`/communications/${id}`);
+    return res.data;
+  },
+
+  markRead: async (ids: string[]): Promise<{ updated: number }> => {
     const res = await apiClient.patch('/communications/mark-read', { ids });
     return res.data;
   },
 
   markAllRead: async (): Promise<{ updated: number }> => {
     const res = await apiClient.patch('/communications/mark-read', {});
+    return res.data;
+  },
+
+  reply: async (messageId: string, body: string): Promise<CommunicationMessage> => {
+    const res = await apiClient.post(`/communications/${messageId}/reply`, { body });
+    return res.data;
+  },
+
+  sendToMember: async (data: {
+    memberId: string;
+    cashGroupId?: string;
+    title: string;
+    body: string;
+  }): Promise<CommunicationMessage> => {
+    const res = await apiClient.post('/communications/send', data);
     return res.data;
   },
 

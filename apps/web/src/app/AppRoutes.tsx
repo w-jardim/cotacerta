@@ -14,6 +14,7 @@ import { MemberPortalPage } from '../pages/MemberPortalPage';
 import { AnnualClosingPage } from '../pages/AnnualClosingPage';
 import { PaymentRequestsPage } from '../pages/PaymentRequestsPage';
 import { LedgerPage } from '../pages/LedgerPage';
+import { ComunicacoesPage } from '../pages/ComunicacoesPage';
 import { GestorRoute } from '../features/auth/GestorRoute';
 import { CotistaRoute } from '../features/auth/CotistaRoute';
 import { PublicOnlyRoute } from '../features/auth/PublicOnlyRoute';
@@ -31,6 +32,7 @@ export function AppRoutes() {
         <Route path="/emprestimos" element={<GestorRoute><LoansListPage /></GestorRoute>} />
         <Route path="/conferencia" element={<GestorRoute><PaymentRequestsPage /></GestorRoute>} />
         <Route path="/quem-deve" element={<GestorRoute><DebtorsPage /></GestorRoute>} />
+        <Route path="/comunicacoes" element={<GestorRoute><ComunicacoesPage /></GestorRoute>} />
         <Route path="/caixinhas/:cashGroupId/cotistas" element={<GestorRoute><MembersPage /></GestorRoute>} />
         <Route path="/caixinhas/:cashGroupId/cobrancas" element={<GestorRoute><ChargesPage /></GestorRoute>} />
         <Route path="/caixinhas/:cashGroupId/emprestimos" element={<GestorRoute><LoansPage /></GestorRoute>} />
