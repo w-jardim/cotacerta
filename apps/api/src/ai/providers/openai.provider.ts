@@ -9,7 +9,8 @@ export class OpenAIProvider extends AIService {
 
   constructor(private configService: ConfigService) {
     super();
-    this.apiKey = this.configService.get<string>('OPENAI_API_KEY', null);
+    const key = this.configService.get<string | undefined>('OPENAI_API_KEY');
+    this.apiKey = key ?? null;
   }
 
   async analyze(request: AIAnalysisRequest): Promise<AIAnalysisResult> {
