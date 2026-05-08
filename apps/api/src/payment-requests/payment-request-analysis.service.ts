@@ -42,7 +42,7 @@ interface ExpectedReceiptData {
 export class PaymentRequestAnalysisService {
   constructor(
     private readonly prisma: PrismaService,
-    @Optional() private readonly aiFactory: AIProviderFactory | null,
+    @Optional() private readonly aiFactory: AIProviderFactory,
   ) {}
 
   async analyzePaymentRequest(requestId: string) {
