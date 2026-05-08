@@ -32,7 +32,7 @@ function getResultRows(closing: AnnualClosing | SimulateResult | null): MemberCl
 }
 
 export function AnnualClosingPage() {
-  const { id: groupId } = useParams<{ id: string }>();
+  const { cashGroupId: groupId } = useParams<{ cashGroupId: string }>();
 
   const [group, setGroup] = useState<CashGroup | null>(null);
   const [savedClosings, setSavedClosings] = useState<AnnualClosing[]>([]);

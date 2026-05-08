@@ -12,6 +12,7 @@ import { LoansListPage } from '../pages/LoansListPage';
 import { DebtorsPage } from '../pages/DebtorsPage';
 import { MemberPortalPage } from '../pages/MemberPortalPage';
 import { AnnualClosingPage } from '../pages/AnnualClosingPage';
+import { PaymentRequestsPage } from '../pages/PaymentRequestsPage';
 import { GestorRoute } from '../features/auth/GestorRoute';
 import { CotistaRoute } from '../features/auth/CotistaRoute';
 import { PublicOnlyRoute } from '../features/auth/PublicOnlyRoute';
@@ -27,11 +28,12 @@ export function AppRoutes() {
         <Route path="/cotistas" element={<GestorRoute><MembersListPage /></GestorRoute>} />
         <Route path="/cobrancas" element={<GestorRoute><ChargesListPage /></GestorRoute>} />
         <Route path="/emprestimos" element={<GestorRoute><LoansListPage /></GestorRoute>} />
+        <Route path="/conferencia" element={<GestorRoute><PaymentRequestsPage /></GestorRoute>} />
         <Route path="/quem-deve" element={<GestorRoute><DebtorsPage /></GestorRoute>} />
         <Route path="/caixinhas/:cashGroupId/cotistas" element={<GestorRoute><MembersPage /></GestorRoute>} />
-        <Route path="/caixinhas/:id/cobrancas" element={<GestorRoute><ChargesPage /></GestorRoute>} />
+        <Route path="/caixinhas/:cashGroupId/cobrancas" element={<GestorRoute><ChargesPage /></GestorRoute>} />
         <Route path="/caixinhas/:cashGroupId/emprestimos" element={<GestorRoute><LoansPage /></GestorRoute>} />
-        <Route path="/caixinhas/:id/fechamento" element={<GestorRoute><AnnualClosingPage /></GestorRoute>} />
+        <Route path="/caixinhas/:cashGroupId/fechamento" element={<GestorRoute><AnnualClosingPage /></GestorRoute>} />
         <Route path="/meu-painel" element={<CotistaRoute><MemberPortalPage /></CotistaRoute>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

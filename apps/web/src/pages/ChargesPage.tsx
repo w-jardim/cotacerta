@@ -26,7 +26,7 @@ import type {
 const MAX_RECEIPT_SIZE_BYTES = 5 * 1024 * 1024;
 
 export function ChargesPage() {
-  const { id } = useParams<{ id: string }>();
+  const { cashGroupId } = useParams<{ cashGroupId: string }>();
   const [cashGroup, setCashGroup] = useState<CashGroup | null>(null);
   const [charges, setCharges] = useState<MonthlyCharge[]>([]);
   const [summary, setSummary] = useState<ChargesSummary | null>(null);
@@ -57,20 +57,20 @@ export function ChargesPage() {
   const years = Array.from({ length: 5 }, (_, index) => currentDate.getFullYear() - 2 + index);
 
   useEffect(() => {
-    if (id) {
+    if (cashGroupId) {
       loadCashGroup();
     }
-  }, [id]);
+  }, [cashGroupId]);
 
   useEffect(() => {
-    if (id) {
+    if (cashGroupId) {
       loadCharges();
     }
-  }, [id, selectedMonth, selectedYear]);
+  }, [cashGroupId, selectedMonth, selectedYear]);
 
   const loadCashGroup = async () => {
     try {
-      const data = await cashGroupsApi.getOne(id!);
+      const data = await cashGroupsApi.getOne(cashGroupId!);
       setCashGroup(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao carregar caixinha');
@@ -82,7 +82,7 @@ export function ChargesPage() {
       setLoading(true);
       setError('');
       const data = await chargesApi.listCharges(
-        id!,
+        cashGroupId!,
         selectedMonth === 'all' ? undefined : parseInt(selectedMonth, 10),
         selectedYear === 'all' ? undefined : parseInt(selectedYear, 10),
       );
@@ -103,7 +103,7 @@ export function ChargesPage() {
   const loadChargeDetails = async (chargeId: string) => {
     try {
       setDetailsLoading(true);
-      const data = await chargesApi.getOne(id!, chargeId);
+      const data = await chargesApi.getOne(cashGroupId!, chargeId);
       setChargeDetails(data);
       const remaining = Math.max(0, parseFloat(data.amountDue) - parseFloat(data.amountPaid));
       setPaymentAmount(remaining.toFixed(2));
@@ -118,7 +118,7 @@ export function ChargesPage() {
     try {
       setLoading(true);
       setError('');
-      await chargesApi.generateCharges(id!, {
+      await chargesApi.generateCharges(cashGroupId!, {
         referenceMonth: parseInt(generateMonth, 10),
         referenceYear: parseInt(generateYear, 10),
       });
@@ -137,7 +137,7 @@ export function ChargesPage() {
     try {
       setIsSubmittingPayment(true);
       setError('');
-      await chargesApi.registerPayment(id!, selectedCharge.id, {
+      await chargesApi.registerPayment(cashGroupId!, selectedCharge.id, {
         amountPaid: parseFloat(paymentAmount),
         paidAt: new Date(`${paymentDate}T12:00:00`).toISOString(),
         paymentMethod: 'PIX',
@@ -158,7 +158,7 @@ export function ChargesPage() {
     try {
       setLoading(true);
       setError('');
-      await chargesApi.cancel(id!, chargeId);
+      await chargesApi.cancel(cashGroupId!, chargeId);
       await loadCharges();
       if (selectedCharge?.id === chargeId) {
         await loadChargeDetails(chargeId);

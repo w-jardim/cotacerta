@@ -80,8 +80,8 @@ export function ChargesListPage() {
     <AuthenticatedLayout>
       <div className="space-y-8">
         <PageHeader
-          title="Cobranças abertas"
-          subtitle="Visualize cobranças agrupadas por caixinha e entre direto no fluxo operacional de cada grupo."
+          title="Todas as Cobranças"
+          subtitle="Visualize cobranças de todas as caixinhas. Clique em uma caixinha para gerenciar cobranças específicas."
           backTo="/dashboard"
           backLabel="Voltar ao dashboard"
         />

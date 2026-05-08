@@ -71,8 +71,8 @@ export function LoansListPage() {
       <div className="space-y-8">
         <div className="cc-section-head">
           <PageHeader
-            title="Empréstimos"
-            subtitle="Acompanhe operações por caixinha, saldo em aberto e juros previstos sem misturar com mensalidades."
+            title="Todos os Empréstimos"
+            subtitle="Acompanhe empréstimos de todas as caixinhas. Clique em uma caixinha para gerenciar empréstimos específicos."
             backTo="/dashboard"
             backLabel="Voltar ao dashboard"
           />
